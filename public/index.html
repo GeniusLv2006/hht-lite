@@ -163,14 +163,17 @@
         /*
          * _showOverlay() sets el.style.height = window.innerHeight + 'px', which on
          * iOS Safari/PWA can be smaller than the full screen (excludes home-indicator).
-         * CSS !important in author stylesheets beats inline styles in the cascade, so
-         * height:100% here always wins — the bottom:0 anchor then covers the full viewport.
+         * In iOS PWA, 100% of ICB equals the safe-content-area height, not the physical
+         * screen height — so height:100% still leaves a gap at the bottom.
+         * Fix: use height:auto + bottom:calc(-1*safe-area-inset-bottom) to push the
+         * element's bottom edge to the physical screen bottom, same as #btn-area.
          */
         #input-dialog,
         #rate-limit-modal,
         #version-modal,
         #notif-modal {
-            height: 100% !important;
+            height: auto !important;
+            bottom: calc(-1 * env(safe-area-inset-bottom)) !important;
         }
 
         /* ══ INPUT DIALOG ══ */
