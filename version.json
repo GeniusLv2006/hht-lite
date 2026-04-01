@@ -1,16 +1,10 @@
 {
-  "version": "v4.0.6",
-  "date": "2026-04-01",
+  "version": "v4.0.7",
+  "date": "2026-04-02",
   "changes": [
     "全量 UI 重构：Functional Brutalism 设计语言",
     "前端 PWA 与管理后台完全统一视觉系统",
     "字体升级：Bricolage Grotesque + IBM Plex Mono",
-    "双主题（浅色暖羊皮 / 深色深空）防闪优化",
-    "PWA manifest 主题色同步更新",
-    "修复协议弹窗顶部被状态栏遮挡",
-    "修复底部安全区在 PWA 模式下 home indicator 遮挡问题",
-    "修复覆盖层底部白条（version/notif modal）",
-    "修复输入对话框按钮被 home indicator 遮挡",
-    "修复更新通知颜色与主题相反的问题"
+    "双主题（浅色暖羊皮 / 深色深空）防闪优化"
   ]
 }

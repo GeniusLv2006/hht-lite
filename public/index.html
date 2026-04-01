@@ -1474,7 +1474,7 @@
             // 检查是否被拉黑（强制刷新）
             const blacklistResult = await checkBlacklist(newOpenId, true);
             if (blacklistResult.blocked) {
-                showMessage('此 OpenID 已被禁用：' + (blacklistResult.reason || '未说明原因') + '，如有疑问请联系管理员', 5000);
+                showMessage('此 OpenID 已被禁用' + (blacklistResult.reason ? '\n' + blacklistResult.reason : ''), 5000);
                 return;
             }
 
@@ -1687,10 +1687,8 @@
                 refreshQRCodeBtn.disabled = true;
                 refreshQRCodeBtn.style.background = '#c23b22';
                 refreshQRCodeBtn.innerHTML = '此 OpenID 已被禁用';
-                tipsElement.textContent = '';
-                tipsElement.appendChild(document.createTextNode('拉黑原因：' + (blacklistResult.value.reason || '未说明')));
-                tipsElement.appendChild(document.createElement('br'));
-                tipsElement.appendChild(document.createTextNode('如有疑问请联系管理员'));
+                tipsElement.style.whiteSpace = 'pre-wrap';
+                tipsElement.textContent = blacklistResult.value.reason || '';
                 qrcodeElement.innerHTML = '';
                 qrcodeContainer.classList.remove('loading');
                 if (isInitialLoad) {
