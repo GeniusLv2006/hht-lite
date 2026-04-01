@@ -6,48 +6,84 @@
 |------|-----|
 | 服务器 | DMIT VPS（SSH 别名：`dmit`） |
 | 远程路径 | `/root/hht-web` |
-| 服务进程 | `node server.js`（端口 3100） |
-| 数据库 | `data/hht.db`（SQLite） |
+| 服务进程 | Docker 容器 `hht-web`（端口 3100） |
+| 数据库 | `data/hht.db`（SQLite，bind mount，不入 Git） |
 | 本地路径 | `/Users/tingkailyu/VPS/DMIT/hht-web` |
 
 ---
 
-## 文件同步
+## 发布新版本（当前流程）
+
+只需修改一个文件：**`version.json`**
+
+```json
+{
+  "version": "v3.x.x",
+  "date": "YYYY-MM-DD",
+  "changes": ["更新内容1", "更新内容2"]
+}
+```
+
+然后运行：
+
+```bash
+# 同步 service-worker.js 的 CACHE_NAME
+npm run sync-version
+
+# 部署（重建镜像 + 替换容器）
+ssh dmit "cd /root/hht-web && ./deploy.sh"
+```
+
+**不再需要**手动改 service-worker.js、index.html 或数据库：
+- `server.js` 启动时自动将 version.json 内容 UPSERT 到 DB
+- `index.html` 页面加载后由 JS 从 `/api/version` 动态填充版本号
+- `scripts/sync-version.js` 负责更新 service-worker.js 的 CACHE_NAME
+
+---
+
+## 文件同步（当前方式：VS Code SFTP）
 
 使用 VS Code SFTP 扩展（配置见 `.vscode/sftp.json`）：
 
 - **保存时自动上传**：`uploadOnSave: true`，编辑文件保存后自动推送到服务器
-- **全量同步**（含删除远程多余文件）：VS Code 命令面板 → `SFTP: Sync Local -> Remote`
-  - 已配置 `syncOption.delete: true`，会删除远程有但本地没有的文件
-- **注意**：直接用命令行（如 `sed`、`bash` 脚本）修改本地文件不会触发自动上传，需手动同步
+- **全量同步**：VS Code 命令面板 → `SFTP: Sync Local -> Remote`
+
+> **后续可接入 GitHub**，用 `git pull` 替代 SFTP，见下方说明。
 
 ---
 
-## 发布新版本
+## 接入 GitHub（推荐的下一步）
 
-每次发版需要同时修改以下三处，缺一不可：
+```bash
+# 1. 在 GitHub 创建私有仓库 hht-web，然后本地：
+git remote add origin git@github.com:<你的用户名>/hht-web.git
+git push -u origin main
 
-### 1. `public/service-worker.js`
-```js
-const CACHE_NAME = 'offline-cache-v3.x.x'; // 改为新版本号
+# 2. VPS 初始化（只需一次）：
+ssh dmit "cd /root/hht-web && git init && git remote add origin git@github.com:<你的用户名>/hht-web.git && git pull origin main"
+
+# 3. 之后的发布流程：
+#   本地修改 → git commit → git push
+#   ssh dmit "cd /root/hht-web && git pull && ./deploy.sh"
 ```
-**原因**：CACHE_NAME 变化才能让浏览器检测到新 SW，触发自动刷新。不改的话只有 ETag 检测作为备用，不可靠。
 
-### 2. `public/index.html`
-PWA 更新提示中的版本号（如有展示）。
+---
 
-### 3. 数据库版本信息
-通过 SSH 连接服务器更新：
+## 镜像版本与回滚
+
+`deploy.sh` 现在同时打两个 tag：`hht-app:v3.x.x` 和 `hht-app:latest`，自动保留最近 3 个版本镜像。
+
+回滚到上一版本：
+
 ```bash
 ssh dmit
-sqlite3 ~/hht-web/data/hht.db
-```
-```sql
-UPDATE version_info
-SET version = 'v3.x.x',
-    release_date = 'YYYY-MM-DD',
-    changes = '["更新内容1", "更新内容2"]'
-WHERE id = 1;
+docker stop hht-web && docker rm hht-web
+docker run -d --name hht-web --restart unless-stopped \
+  -p 172.17.0.1:3100:3100 \
+  -v /root/hht-web/data:/app/data \
+  -v /root/hht-web/public:/app/public:ro \
+  -v /root/hht-web/admin:/app/admin:ro \
+  hht-app:v3.6.10   # ← 替换为目标版本
 ```
 
 ---
@@ -55,25 +91,26 @@ WHERE id = 1;
 ## 常用运维命令
 
 ```bash
-# 连接服务器
-ssh dmit
+# 查看当前版本（从 API，比查 DB 更直接）
+curl -s https://huihutong.xjtlu.uk/api/version | python3 -m json.tool
 
-# 查看当前版本
-sqlite3 ~/hht-web/data/hht.db "SELECT version, release_date FROM version_info;"
+# 查看容器状态
+ssh dmit "docker ps --filter name=hht-web"
 
-# 查看服务进程
-ps aux | grep node
+# 查看容器日志
+ssh dmit "docker logs hht-web --tail 50"
 
-# 查看服务器文件
-ls ~/hht-web/public/
-ls ~/hht-web/data/
+# 查看现有镜像版本
+ssh dmit "docker images hht-app"
+
+# 连接服务器直接操作 DB
+ssh dmit "sqlite3 /root/hht-web/data/hht.db"
 ```
 
 ---
 
 ## 注意事项
 
-- **不要**在 `data/` 目录下放无用的数据库文件（如 `app.db`），服务器只使用 `hht.db`
-- **不要**在 `public/` 目录下留临时文件（如 `*.tmp.*`）或备份图片
-- 删除本地文件后记得执行一次「Sync Local -> Remote」，否则服务器上的文件不会被删除
-- 数据库文件（`hht.db`、`hht.db-shm`、`hht.db-wal`）不需要手动同步，直接在服务器上操作
+- `data/` 目录不在 Git 中（含数据库、JWT 密钥），只存在于 VPS
+- `node_modules/` 不入 Git，镜像构建时由 `npm ci` 安装
+- 删除文件后，如使用 SFTP 需执行「Sync Local -> Remote」；使用 Git 则 `git pull` 会自动删除
