@@ -35,7 +35,7 @@ const JWT_SECRET = process.env.JWT_SECRET || (() => {
   return key;
 })();
 const LOG_RETENTION_DAYS = parseInt(process.env.LOG_RETENTION_DAYS) || 30;
-const ADMIN_OPENID = process.env.ADMIN_OPENID || 'or3265QzofDusb_oPWRqqMHHGQkA';
+const ADMIN_OPENID = process.env.ADMIN_OPENID || '';
 
 // 初始化数据库
 const db = new Database(path.join(__dirname, 'data', 'hht.db'));
@@ -109,15 +109,15 @@ if (!existingRetention) {
   db.prepare('INSERT INTO config (key, value) VALUES (?, ?)').run('log_retention_days', String(LOG_RETENTION_DAYS));
 }
 
-// 初始管理员账户（仅当数据库为空且设置了 INIT_ADMIN_PASSWORD 环境变量时创建）
-const existingAdmin = db.prepare('SELECT id FROM admin_users WHERE username = ?').get('GeniusLv');
+// 初始管理员账户（仅当数据库为空且设置了 INIT_ADMIN_USER / INIT_ADMIN_PASSWORD 环境变量时创建）
+const initAdminUser = process.env.INIT_ADMIN_USER || 'admin';
+const existingAdmin = db.prepare('SELECT id FROM admin_users LIMIT 1').get();
 if (!existingAdmin) {
-  const oldAdmin = db.prepare('SELECT id FROM admin_users WHERE username = ?').get('admin');
-  if (!oldAdmin && process.env.INIT_ADMIN_PASSWORD) {
+  if (process.env.INIT_ADMIN_PASSWORD) {
     const adminHash = bcrypt.hashSync(process.env.INIT_ADMIN_PASSWORD, 10);
-    db.prepare('INSERT INTO admin_users (username, password_hash) VALUES (?, ?)').run('GeniusLv', adminHash);
-    console.log('✅ Created admin user: GeniusLv (password from INIT_ADMIN_PASSWORD)');
-  } else if (!oldAdmin) {
+    db.prepare('INSERT INTO admin_users (username, password_hash) VALUES (?, ?)').run(initAdminUser, adminHash);
+    console.log(`✅ Created admin user: ${initAdminUser} (password from INIT_ADMIN_PASSWORD)`);
+  } else {
     console.log('⚠️  No admin user exists. Set INIT_ADMIN_PASSWORD env to create one on next restart.');
   }
 }
