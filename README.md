@@ -1,6 +1,6 @@
 # hht-web
 
-慧湖通（HuiHuTong）的 PWA 前端 + 后端服务，提供黑名单检测、访问日志、通知推送、版本管理等功能，并内置管理后台。
+慧湖通（HuiHuTong）的 PWA 前端 + 后端服务，提供黑名单检测、访问日志、公告推送、版本管理等功能，并内置管理后台。
 
 > 前端 PWA 基于 [HuiHuTong](https://github.com/PairZhu/HuiHuTong)，感谢 [@PairZhu](https://github.com/PairZhu)。
 
@@ -46,7 +46,7 @@ cp .env.example .env
 
 | 变量 | 说明 | 必填 |
 |------|------|------|
-| `ADMIN_OPENID` | 管理员微信 OpenID | 是 |
+| `ADMIN_OPENID` | 管理员微信小程序慧湖通 OpenID | 是 |
 | `INIT_ADMIN_PASSWORD` | 首次启动时创建管理员账户的密码 | 首次部署时需要 |
 | `INIT_ADMIN_USER` | 管理员用户名（默认 `admin`） | 否 |
 | `ALLOWED_ORIGINS` | 允许的前端域名，逗号分隔 | 否 |
