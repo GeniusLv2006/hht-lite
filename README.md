@@ -2,7 +2,7 @@
 
 慧湖通（HuiHuTong）的 PWA 前端 + 后端服务，提供黑名单检测、访问日志、公告推送、版本管理等功能，并内置管理后台。
 
-> 前端 PWA 基于 [HuiHuTong](https://github.com/PairZhu/HuiHuTong)，感谢 [@PairZhu](https://github.com/PairZhu)。
+> 前端 PWA 基于 [hht-web](https://github.com/mercutiojohn/hht-web)，感谢 [@PairZhu](https://github.com/PairZhu)。
 
 ---
 
