@@ -6,244 +6,668 @@
   <title>慧湖通管理后台</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;600&display=swap">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;600&display=swap" media="print" onload="this.media='all'">
-  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;600&display=swap"></noscript>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    /* ══════════════════════════════════════════
+       CSS VARIABLES — Functional Brutalism
+       (dark-mode class on body, set by JS)
+    ══════════════════════════════════════════ */
     body {
-      font-family: 'Inter', 'Noto Sans SC', -apple-system, sans-serif;
-      background: #f5f5f7;
-      min-height: 100vh;
-      color: #1d1d1f;
-      -webkit-font-smoothing: antialiased;
+      --bg:         #e8e4dd;
+      --bg-2:       #dedad2;
+      --ink:        #1a1a1a;
+      --ink-2:      #6b6560;
+      --accent:     #c23b22;
+      --line:       rgba(26,26,26,0.82);
+      --line-faint: rgba(26,26,26,0.11);
+      --danger:     #b83225;
     }
-    .login-container { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+    body.dark-mode {
+      --bg:         #111110;
+      --bg-2:       #1d1d1b;
+      --ink:        #e8e4dd;
+      --ink-2:      #7a7671;
+      --accent:     #e05a3a;
+      --line:       rgba(232,228,221,0.78);
+      --line-faint: rgba(232,228,221,0.09);
+      --danger:     #e05a3a;
+    }
+
+    /* ══ RESET ══ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'IBM Plex Mono', 'SF Mono', monospace;
+      background: var(--bg);
+      color: var(--ink);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    /* ══ LOGIN ══ */
+    .login-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px;
+    }
     .has-token .login-container { display: none !important; }
     .has-token .dashboard { display: block !important; }
-    .login-box { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); width: 100%; max-width: 360px; }
-    .login-box h1 { font-size: 24px; margin-bottom: 30px; text-align: center; }
-    .form-group { margin-bottom: 20px; }
-    .form-group label { display: block; margin-bottom: 8px; font-weight: 500; color: #666; font-size: 14px; }
-    .form-group input, .form-group select, .form-group textarea {
-      width: 100%; padding: 14px 16px; border: 1px solid #e0e0e0; border-radius: 12px;
-      font-size: 16px; font-family: inherit; transition: border-color 0.2s;
+
+    .login-box {
+      width: 100%;
+      max-width: 340px;
+      border: 2px solid var(--line);
+      padding: 36px 28px;
+      box-shadow: 6px 6px 0 var(--line-faint);
+      position: relative;
     }
-    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: #007aff; }
-    .readonly-input { background: #f5f5f5; font-size: 12px; }
+    .login-box::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 4px;
+      background: var(--accent);
+    }
+    .login-box h1 {
+      font-family: 'Bricolage Grotesque', sans-serif;
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 28px;
+    }
+
+    /* ══ FORMS ══ */
+    .form-group { margin-bottom: 18px; }
+    .form-group label {
+      display: block;
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--ink-2);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 11px 13px;
+      background: var(--bg-2);
+      border: 1.5px solid var(--line-faint);
+      color: var(--ink);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.15s;
+      border-radius: 0;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus { border-color: var(--accent); }
+    .form-group input::placeholder,
+    .form-group textarea::placeholder { color: var(--ink-2); }
+    .readonly-input { opacity: 0.6; cursor: default; }
+
+    .error-msg {
+      color: var(--accent);
+      font-size: 12px;
+      margin-top: 12px;
+      text-align: center;
+      display: none;
+    }
+
+    /* ══ BUTTONS ══ */
     .btn {
-      padding: 14px 20px; background: linear-gradient(135deg, #007aff 0%, #5856d6 100%); color: white;
-      border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer;
-      font-family: inherit; transition: transform 0.2s; box-shadow: 0 4px 15px rgba(0, 122, 255, 0.35);
+      padding: 13px 18px;
+      background: var(--ink);
+      color: var(--bg);
+      border: none;
+      font-family: 'Bricolage Grotesque', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.12s, transform 0.1s;
+      border-radius: 0;
+      letter-spacing: 0.01em;
     }
-    .btn:hover { transform: translateY(-1px); }
-    .btn:active { transform: translateY(0); }
-    .btn-danger { background: linear-gradient(135deg, #ff3b30 0%, #ff6b6b 100%); box-shadow: 0 4px 15px rgba(255, 59, 48, 0.35); }
-    .btn-small { padding: 8px 14px; font-size: 13px; border-radius: 8px; }
-    .btn-outline { background: white; color: #007aff; border: 1px solid #007aff; box-shadow: none; }
-    .error-msg { color: #ff3b30; font-size: 14px; margin-top: 15px; text-align: center; display: none; }
+    .btn:hover { opacity: 0.88; }
+    .btn:active { transform: translateY(1px); }
+    .btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+
+    .btn-danger {
+      background: var(--danger);
+      color: #fff;
+    }
+    .btn-outline {
+      background: transparent;
+      color: var(--ink);
+      border: 1.5px solid var(--line);
+    }
+    .btn-outline:hover { background: var(--bg-2); }
+
+    .btn-secondary {
+      padding: 9px 14px;
+      background: var(--bg-2);
+      color: var(--ink);
+      border: 1px solid var(--line-faint);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: border-color 0.12s, background 0.12s;
+      border-radius: 0;
+      letter-spacing: 0.01em;
+      white-space: nowrap;
+    }
+    .btn-secondary:hover { border-color: var(--line); background: var(--bg); }
+
+    .btn-small {
+      padding: 6px 11px;
+      font-size: 11px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-weight: 500;
+      cursor: pointer;
+      border-radius: 0;
+      border: 1px solid var(--line-faint);
+      background: var(--bg-2);
+      color: var(--ink);
+      transition: border-color 0.12s;
+    }
+    .btn-small:hover { border-color: var(--line); }
+    .btn-small.btn-outline { background: transparent; }
+
+    /* Action buttons in table */
+    .btn-tag, .btn-delete, .btn-unblock, .btn-block {
+      padding: 4px 8px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      border-radius: 0;
+      border: 1px solid var(--line-faint);
+      background: transparent;
+      color: var(--ink);
+      margin-right: 4px;
+      transition: border-color 0.12s, background 0.12s;
+      white-space: nowrap;
+    }
+    .btn-tag:hover   { border-color: var(--ink-2); }
+    .btn-delete:hover { border-color: var(--danger); color: var(--danger); }
+    .btn-block:hover  { border-color: var(--danger); color: var(--danger); }
+    .btn-unblock:hover { border-color: #2d7a4a; color: #2d7a4a; }
+
+    /* ══ DASHBOARD ══ */
     .dashboard { display: none; }
-    .header { background: white; padding: 16px 24px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
-    .header h1 { font-size: 20px; }
-    .header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-    .btn-secondary { padding: 10px 16px; background: #f0f0f0; color: #333; border: none; border-radius: 10px; font-size: 14px; font-weight: 500; cursor: pointer; font-family: inherit; }
-    .btn-secondary:hover { background: #e0e0e0; }
-    .content { padding: 20px; max-width: 1400px; margin: 0 auto; }
-    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 12px; margin-bottom: 20px; }
-    .stat-card { background: white; padding: 16px; border-radius: 14px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-    .stat-card .value { font-size: 24px; font-weight: 600; color: #007aff; }
-    .stat-card .value.danger { color: #ff3b30; }
-    .stat-card .label { color: #666; margin-top: 4px; font-size: 12px; }
-    .stat-card[onclick]:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,0,0,0.1); transition: all 0.2s; }
-    .card { background: white; border-radius: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); overflow: hidden; margin-bottom: 20px; }
-    .card-header { padding: 16px; border-bottom: 1px solid #f0f0f0; }
-    .card-header h2 { font-size: 17px; margin-bottom: 12px; }
-    .filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-    .filter-input { padding: 10px 14px; border: 1px solid #e0e0e0; border-radius: 10px; font-size: 14px; font-family: inherit; min-width: 0; }
-    .filter-input:focus { outline: none; border-color: #007aff; }
-    .filter-select { padding: 10px 14px; border: 1px solid #e0e0e0; border-radius: 10px; font-size: 14px; font-family: inherit; background: white; min-width: 0; }
-    .filter-select:focus { outline: none; border-color: #007aff; }
-    .filter-input[type="date"] { width: 130px; flex: 0 0 auto; }
-    .filter-btn { padding: 10px 16px; background: #007aff; color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: 500; cursor: pointer; font-family: inherit; }
-    .filter-btn.reset { background: #f0f0f0; color: #333; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
-    th { font-weight: 600; color: #666; text-transform: uppercase; letter-spacing: 0.5px; background: #fafafa; font-size: 11px; }
-    .openid-cell { font-family: 'SF Mono', Monaco, monospace; font-size: 11px; color: #333; word-break: break-all; line-height: 1.4; }
-    .tag-badge { padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 500; background: #fce4ec; color: #c2185b; margin-top: 4px; display: inline-block; }
-    .blocked-badge { background: #ffebee; color: #c62828; }
-    .action-badge { padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 500; white-space: nowrap; }
-    .action-badge.refresh { background: #e3f2fd; color: #1976d2; }
-    .action-badge.verify { background: #fff3e0; color: #f57c00; }
-    .action-badge.success { background: #e8f5e9; color: #388e3c; }
-    .action-badge.load { background: #f3e5f5; color: #7b1fa2; }
-    .action-badge.manual { background: #e3f2fd; color: #1565c0; }
-    .action-badge.auto { background: #e0f7fa; color: #00838f; }
-    .action-badge.timeout { background: #fff8e1; color: #ff8f00; }
-    .action-badge.blocked { background: #ffebee; color: #c62828; }
-    .device-info { font-size: 11px; line-height: 1.5; }
-    .device-main { color: #333; font-weight: 500; }
-    .device-detail { color: #888; font-size: 10px; }
-    .device-badge { padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 500; background: #f0f0f0; color: #666; display: inline-block; margin-right: 4px; margin-bottom: 2px; }
-    .device-badge.ios { background: #e3f2fd; color: #1976d2; }
-    .device-badge.android { background: #e8f5e9; color: #388e3c; }
-    .device-badge.mac { background: #f3e5f5; color: #7b1fa2; }
-    .device-badge.windows { background: #fff3e0; color: #f57c00; }
-    .device-badge.wechat { background: #e8f5e9; color: #07c160; }
-    .ip-cell { font-family: 'SF Mono', Monaco, monospace; font-size: 11px; color: #666; word-break: break-all; }
+
+    .header {
+      background: var(--bg);
+      border-bottom: 1px solid var(--line-faint);
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      position: relative;
+    }
+    .header::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 4px;
+      background: var(--accent);
+    }
+    .header h1 {
+      font-family: 'Bricolage Grotesque', sans-serif;
+      font-size: 17px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+    }
+    .header-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-left: auto;
+    }
+
+    /* ══ CONTENT ══ */
+    .content {
+      padding: 20px 24px;
+      max-width: 1440px;
+      margin: 0 auto;
+    }
+
+    /* ══ STATS GRID ══ */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+      gap: 1px;
+      background: var(--line-faint);
+      border: 1px solid var(--line-faint);
+      margin-bottom: 20px;
+    }
+    .stat-card {
+      background: var(--bg);
+      padding: 18px 16px;
+      transition: background 0.12s;
+      cursor: default;
+      position: relative;
+    }
+    .stat-card[onclick] { cursor: pointer; }
+    .stat-card[onclick]:hover { background: var(--bg-2); }
+    .stat-card .value {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 28px;
+      font-weight: 500;
+      color: var(--accent);
+      letter-spacing: -0.02em;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .stat-card .value.danger { color: var(--danger); }
+    .stat-card .label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--ink-2);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    /* ══ CARD / TABLE ══ */
+    .card {
+      background: var(--bg);
+      border: 1px solid var(--line-faint);
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+    .card-header {
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--line-faint);
+    }
+    .card-header h2 {
+      font-family: 'Bricolage Grotesque', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 12px;
+    }
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+    .filter-input, .filter-select {
+      padding: 8px 10px;
+      background: var(--bg-2);
+      border: 1px solid var(--line-faint);
+      color: var(--ink);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      outline: none;
+      transition: border-color 0.12s;
+      border-radius: 0;
+      min-width: 0;
+    }
+    .filter-input:focus, .filter-select:focus { border-color: var(--accent); }
+    .filter-btn {
+      padding: 8px 14px;
+      background: var(--ink);
+      color: var(--bg);
+      border: none;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      border-radius: 0;
+      transition: opacity 0.12s;
+      white-space: nowrap;
+    }
+    .filter-btn:hover { opacity: 0.85; }
+    .filter-btn.reset {
+      background: transparent;
+      color: var(--ink);
+      border: 1px solid var(--line-faint);
+    }
+    .filter-btn.reset:hover { border-color: var(--line); background: var(--bg-2); }
+    .note {
+      font-size: 11px;
+      color: var(--ink-2);
+      margin-top: 10px;
+      letter-spacing: 0.01em;
+    }
+
+    /* Table */
+    .table-wrapper { overflow-x: auto; }
+    @media (max-width: 768px) { .table-wrapper { display: none; } }
+
+    table { border-collapse: collapse; width: 100%; }
+    thead { border-bottom: 2px solid var(--line); }
+    th {
+      padding: 10px 12px;
+      text-align: left;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--ink-2);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      white-space: nowrap;
+    }
+    td {
+      padding: 10px 12px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      border-bottom: 1px solid var(--line-faint);
+      vertical-align: top;
+    }
+    tr:hover td { background: var(--bg-2); }
+
+    .openid-cell {
+      font-size: 11px;
+      word-break: break-all;
+      max-width: 160px;
+      color: var(--ink-2);
+    }
+    .ip-cell { font-size: 11px; color: var(--ink-2); }
     .actions-cell { white-space: nowrap; }
-    .actions-cell button { margin-right: 4px; padding: 4px 8px; font-size: 11px; border-radius: 6px; cursor: pointer; border: none; font-family: inherit; }
-    .actions-cell .btn-tag { background: #e3f2fd; color: #1976d2; }
-    .actions-cell .btn-block { background: #ffebee; color: #c62828; }
-    .actions-cell .btn-unblock { background: #e8f5e9; color: #388e3c; }
-    .actions-cell .btn-delete { background: #fff3e0; color: #e65100; }
 
-    /* 分页区域 */
-    .pagination-wrapper { padding: 16px; border-top: 1px solid #f0f0f0; }
-    .pagination-nav { display: flex; justify-content: center; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
-    .pagination-nav button { padding: 8px 14px; border: 1px solid #e0e0e0; background: white; border-radius: 8px; cursor: pointer; font-family: inherit; font-size: 14px; }
-    .pagination-nav button:hover:not(:disabled) { background: #f0f0f0; }
-    .pagination-nav button:disabled { opacity: 0.5; cursor: not-allowed; }
-    .pagination-nav .current { background: #007aff; color: white; border-color: #007aff; }
-    .pagination-jump { display: flex; justify-content: center; align-items: center; gap: 8px; padding: 12px; background: #f9f9f9; border-radius: 10px; }
-    .pagination-jump label { font-size: 14px; color: #666; }
-    .pagination-jump input { width: 70px; padding: 10px 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 14px; text-align: center; font-family: inherit; }
-    .pagination-jump input:focus { outline: none; border-color: #007aff; }
-    .pagination-jump button { padding: 10px 16px; background: #007aff; color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; font-family: inherit; }
-    .pagination-jump .page-info { font-size: 13px; color: #888; }
+    /* Action badges */
+    .action-badge {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      font-weight: 500;
+      padding: 3px 7px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .action-badge.manual  { background: rgba(194,59,34,0.12); color: var(--accent); }
+    .action-badge.auto    { background: rgba(26,26,26,0.07); color: var(--ink-2); }
+    .action-badge.timeout { background: rgba(184,50,37,0.15); color: var(--danger); }
+    .action-badge.blocked { background: rgba(184,50,37,0.2); color: var(--danger); }
+    .action-badge.success { background: rgba(45,122,74,0.12); color: #2d7a4a; }
+    .action-badge.verify  { background: rgba(26,26,26,0.07); color: var(--ink-2); }
+    .action-badge.load    { background: rgba(26,26,26,0.05); color: var(--ink-2); }
+    .action-badge.refresh { background: rgba(26,26,26,0.05); color: var(--ink-2); }
+    body.dark-mode .action-badge.auto,
+    body.dark-mode .action-badge.load,
+    body.dark-mode .action-badge.verify,
+    body.dark-mode .action-badge.refresh { background: rgba(232,228,221,0.07); }
 
-    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
-    .modal-content { background: white; padding: 24px; border-radius: 20px; width: 100%; max-width: 420px; max-height: 90vh; overflow-y: auto; }
-    .modal-content h2 { margin-bottom: 20px; font-size: 18px; }
-    .modal-actions { display: flex; gap: 12px; margin-top: 20px; }
-    .modal-actions button { flex: 1; }
-    .list-item { padding: 14px 16px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-    .list-item:last-child { border-bottom: none; }
-    .list-item-info { flex: 1; min-width: 0; }
-    .list-item-title { font-family: 'SF Mono', Monaco, monospace; font-size: 11px; color: #333; word-break: break-all; }
-    .list-item-subtitle { font-size: 12px; color: #888; margin-top: 4px; }
-    .empty-state { padding: 40px; text-align: center; color: #888; }
-    .note { font-size: 11px; color: #999; margin-top: 8px; font-style: italic; }
+    /* Device badges */
+    .device-info { display: flex; flex-direction: column; gap: 3px; }
+    .device-main { display: flex; flex-wrap: wrap; gap: 3px; }
+    .device-badge {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      padding: 2px 6px;
+      background: var(--bg-2);
+      border: 1px solid var(--line-faint);
+      color: var(--ink-2);
+      white-space: nowrap;
+    }
+    .device-badge.ios     { border-color: rgba(0,120,200,0.3); color: #0078c8; }
+    .device-badge.android { border-color: rgba(60,160,80,0.3); color: #3ca050; }
+    .device-badge.wechat  { border-color: rgba(7,193,96,0.3); color: #07c160; }
+    .device-badge.mac     { border-color: rgba(100,100,100,0.3); }
+    .device-badge.windows { border-color: rgba(0,120,215,0.3); color: #0078d7; }
+    body.dark-mode .device-badge.ios     { color: #4db0f0; }
+    body.dark-mode .device-badge.android { color: #6dd68a; }
+    body.dark-mode .device-badge.wechat  { color: #4dd196; }
+    body.dark-mode .device-badge.windows { color: #60a8f0; }
+    .device-detail {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      color: var(--ink-2);
+    }
 
-    /* 移动端卡片视图 */
+    /* Tag badge */
+    .tag-badge {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      padding: 2px 6px;
+      background: rgba(194,59,34,0.1);
+      color: var(--accent);
+      border: 1px solid rgba(194,59,34,0.2);
+      margin-left: 4px;
+    }
+    .blocked-badge {
+      background: rgba(184,50,37,0.15);
+      color: var(--danger);
+      border-color: rgba(184,50,37,0.25);
+    }
+
+    /* ══ MOBILE LOG CARDS ══ */
     .log-cards { display: none; }
-    .log-card { background: white; border-radius: 12px; padding: 14px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
-    .log-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
-    .log-card-time { font-size: 12px; color: #888; }
-    .log-card-openid { font-family: 'SF Mono', Monaco, monospace; font-size: 11px; color: #333; word-break: break-all; margin-bottom: 8px; line-height: 1.4; }
-    .log-card-row { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding-top: 8px; border-top: 1px solid #f0f0f0; }
-    .log-card-actions { display: flex; gap: 8px; }
-    .log-card-ip { font-family: 'SF Mono', Monaco, monospace; font-size: 10px; color: #888; margin-top: 6px; }
-
-    /* 移动端响应式 */
     @media (max-width: 768px) {
-      .header { padding: 12px 16px; }
-      .header h1 { font-size: 18px; width: 100%; text-align: center; order: -1; }
-      .header-actions { width: 100%; justify-content: center; }
-      .btn-secondary { padding: 8px 12px; font-size: 13px; }
-      .content { padding: 12px; }
-      .stats-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
-      .stat-card { padding: 12px; }
-      .stat-card .value { font-size: 20px; }
-      .stat-card .label { font-size: 11px; }
-      .card-header { padding: 12px; }
-      .card-header h2 { font-size: 16px; }
-      .filters { gap: 6px; flex-wrap: wrap; }
-      .filter-input, .filter-select { padding: 8px 10px; font-size: 13px; flex: 1; min-width: 80px; }
-      .filter-input[type="date"] { min-width: 110px; flex: 0 0 auto; }
-      .filter-btn { padding: 8px 12px; font-size: 13px; }
-      .table-wrapper { display: none; }
-      .log-cards { display: block; padding: 12px; }
-      .modal-content { padding: 20px; }
-      .pagination-nav button { padding: 10px 12px; font-size: 13px; }
-      .pagination-jump { flex-direction: column; gap: 10px; }
-      .pagination-jump > div { display: flex; align-items: center; gap: 8px; }
+      .log-cards { display: block; }
+    }
+    .log-card {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line-faint);
+    }
+    .log-card:last-child { border-bottom: none; }
+    .log-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+    .log-card-time {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--ink-2);
+    }
+    .log-card-openid {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--ink-2);
+      word-break: break-all;
+      margin-bottom: 6px;
+    }
+    .log-card-ip {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--ink-2);
+      margin: 4px 0;
+    }
+    .log-card-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 8px;
+    }
+    .log-card-actions { display: flex; gap: 4px; flex-wrap: wrap; }
+
+    /* ══ PAGINATION ══ */
+    .pagination-wrapper {
+      padding: 14px 18px;
+      border-top: 1px solid var(--line-faint);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+    }
+    .pagination-nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    .pagination-nav button {
+      padding: 6px 10px;
+      background: transparent;
+      border: 1px solid var(--line-faint);
+      color: var(--ink);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      cursor: pointer;
+      border-radius: 0;
+      transition: border-color 0.12s, background 0.12s;
+      min-width: 32px;
+    }
+    .pagination-nav button:hover:not(:disabled) { border-color: var(--line); background: var(--bg-2); }
+    .pagination-nav button:disabled { opacity: 0.35; cursor: not-allowed; }
+    .pagination-nav button.current {
+      background: var(--ink);
+      color: var(--bg);
+      border-color: transparent;
+    }
+    .pagination-jump {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .pagination-jump label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--ink-2);
+    }
+    .pagination-jump input[type="number"] {
+      width: 56px;
+      padding: 6px 8px;
+      background: var(--bg-2);
+      border: 1px solid var(--line-faint);
+      color: var(--ink);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      outline: none;
+      border-radius: 0;
+      -moz-appearance: textfield;
+    }
+    .pagination-jump input[type="number"]::-webkit-inner-spin-button,
+    .pagination-jump input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+    .pagination-jump input:focus { border-color: var(--accent); }
+    .pagination-jump button {
+      padding: 6px 12px;
+      background: var(--bg-2);
+      border: 1px solid var(--line-faint);
+      color: var(--ink);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      cursor: pointer;
+      border-radius: 0;
+      transition: border-color 0.12s;
+    }
+    .pagination-jump button:hover { border-color: var(--line); }
+    .page-info {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--ink-2);
     }
 
-    @media (max-width: 480px) {
-      .stats-grid { grid-template-columns: repeat(2, 1fr); }
-      .header-actions { gap: 6px; }
-      .btn-secondary { padding: 8px 10px; font-size: 12px; }
+    /* ══ LIST ITEMS (users/blacklist modals) ══ */
+    .list-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--line-faint);
+      gap: 12px;
     }
-    /* 深色模式 */
-    body.dark-mode { background: #1c1c1e; color: #f5f5f7; }
-    body.dark-mode .login-box, body.dark-mode .card, body.dark-mode .stat-card, body.dark-mode .modal-content { background: #2c2c2e; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
-    body.dark-mode .login-box h1, body.dark-mode .header h1, body.dark-mode .card-header h2 { color: #f5f5f7; }
-    body.dark-mode .form-group label { color: #a1a1a6; }
-    body.dark-mode .modal-content h2 { color: #f5f5f7; }
-    body.dark-mode #notifAdminStatus { color: #a1a1a6; }
-    body.dark-mode .form-group input, body.dark-mode .form-group select, body.dark-mode .form-group textarea, body.dark-mode .filter-input, body.dark-mode .filter-select { background: #3a3a3c; border-color: #48484a; color: #f5f5f7; }
-    body.dark-mode .readonly-input { background: #2c2c2e; color: #f5f5f7; }
-    body.dark-mode .form-group input:focus, body.dark-mode .form-group select:focus, body.dark-mode .filter-input:focus, body.dark-mode .filter-select:focus { border-color: #0a84ff; }
-    body.dark-mode .form-group textarea:focus { border-color: #0a84ff; }
-    body.dark-mode #notificationModal textarea { background: #3a3a3c; border-color: #48484a; color: #f5f5f7; }
-    body.dark-mode .header { background: #2c2c2e; box-shadow: 0 2px 10px rgba(0,0,0,0.3); }
-    body.dark-mode .btn-secondary { background: #3a3a3c; color: #f5f5f7; }
-    body.dark-mode .btn-secondary:hover { background: #48484a; }
-    body.dark-mode .filter-btn.reset { background: #3a3a3c; color: #f5f5f7; }
-    body.dark-mode .stat-card .label { color: #a1a1a6; }
-    body.dark-mode .stat-card .value { color: #0a84ff; }
-    body.dark-mode .stat-card .value.danger { color: #ff453a; }
-    body.dark-mode .card-header { border-bottom-color: #3a3a3c; }
-    body.dark-mode table th { background: #3a3a3c; color: #a1a1a6; border-bottom-color: #3a3a3c; }
-    body.dark-mode table td { border-bottom-color: #3a3a3c; }
-    body.dark-mode .openid-cell, body.dark-mode .device-main { color: #f5f5f7; }
-    body.dark-mode .ip-cell, body.dark-mode .device-detail, body.dark-mode .log-card-time, body.dark-mode .log-card-ip { color: #a1a1a6; }
-    body.dark-mode .tag-badge { background: #4a1a2c; color: #f48fb1; }
-    body.dark-mode .blocked-badge { background: #3a1f1f; color: #ff453a; }
-    body.dark-mode .action-badge.refresh { background: #1c3a5e; color: #64d2ff; }
-    body.dark-mode .action-badge.verify { background: #3d2f1a; color: #ffd60a; }
-    body.dark-mode .action-badge.success { background: #1e4620; color: #30d158; }
-    body.dark-mode .action-badge.load { background: #3a2a4a; color: #bf5af2; }
-    body.dark-mode .action-badge.manual { background: #1c3a5e; color: #64d2ff; }
-    body.dark-mode .action-badge.auto { background: #1a3a3a; color: #5ac8d8; }
-    body.dark-mode .action-badge.timeout { background: #3d2f1a; color: #ff9f0a; }
-    body.dark-mode .action-badge.blocked { background: #3a1f1f; color: #ff453a; }
-    body.dark-mode .device-badge { background: #3a3a3c; color: #a1a1a6; }
-    body.dark-mode .device-badge.ios { background: #1c3a5e; color: #64d2ff; }
-    body.dark-mode .device-badge.android { background: #1e4620; color: #30d158; }
-    body.dark-mode .device-badge.mac { background: #3a2a4a; color: #bf5af2; }
-    body.dark-mode .device-badge.windows { background: #3d2f1a; color: #ff9f0a; }
-    body.dark-mode .device-badge.wechat { background: #1e4620; color: #30d158; }
-    body.dark-mode .log-card { background: #2c2c2e; box-shadow: 0 1px 4px rgba(0,0,0,0.2); }
-    body.dark-mode .log-card-row { border-top-color: #3a3a3c; }
-    body.dark-mode .log-card-openid { color: #f5f5f7; }
-    body.dark-mode .pagination-nav button { background: #3a3a3c; border-color: #48484a; color: #f5f5f7; }
-    body.dark-mode .pagination-nav button:hover:not(:disabled) { background: #48484a; }
-    body.dark-mode .pagination-nav .current { background: #0a84ff; border-color: #0a84ff; }
-    body.dark-mode .pagination-jump { background: #3a3a3c; }
-    body.dark-mode .pagination-jump label, body.dark-mode .pagination-jump .page-info { color: #a1a1a6; }
-    body.dark-mode .pagination-jump input { background: #2c2c2e; border-color: #48484a; color: #f5f5f7; }
-    body.dark-mode .pagination-wrapper { border-top-color: #3a3a3c; }
-    body.dark-mode .list-item { border-bottom-color: #3a3a3c; }
-    body.dark-mode .list-item-title { color: #f5f5f7; }
-    body.dark-mode .list-item-subtitle { color: #a1a1a6; }
-    body.dark-mode .note { color: #6e6e73; }
-    body.dark-mode .actions-cell .btn-tag { background: #1c3a5e; color: #64d2ff; }
-    body.dark-mode .actions-cell .btn-block { background: #3a1f1f; color: #ff453a; }
-    body.dark-mode .actions-cell .btn-unblock { background: #1e4620; color: #30d158; }
-    body.dark-mode .actions-cell .btn-delete { background: #3d2a1a; color: #ff9f0a; }
-    body.dark-mode .modal { background: rgba(0,0,0,0.7); }
-    body.dark-mode .error-msg { color: #ff453a; }
+    .list-item:last-child { border-bottom: none; }
+    .list-item-info { min-width: 0; flex: 1; }
+    .list-item-title {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      word-break: break-all;
+      margin-bottom: 2px;
+    }
+    .list-item-subtitle {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--ink-2);
+    }
+    .empty-state {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      color: var(--ink-2);
+      padding: 20px 0;
+      text-align: center;
+    }
+
+    /* ══ MODALS ══ */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(26,26,26,0.7);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      -webkit-backdrop-filter: blur(4px);
+      backdrop-filter: blur(4px);
+    }
+    body.dark-mode .modal { background: rgba(0,0,0,0.75); }
+    .modal-content {
+      background: var(--bg);
+      border: 2px solid var(--line);
+      padding: 26px 24px;
+      max-width: 420px;
+      width: calc(100vw - 48px);
+      max-height: 85vh;
+      overflow-y: auto;
+      box-shadow: 6px 6px 0 var(--line-faint);
+      position: relative;
+    }
+    .modal-content::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 3px;
+      background: var(--accent);
+    }
+    .modal-content h2 {
+      font-family: 'Bricolage Grotesque', sans-serif;
+      font-size: 17px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 20px;
+    }
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+
+    /* Notification status */
+    #notifAdminStatus {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--ink-2);
+      margin-bottom: 16px;
+      margin-top: -12px;
+    }
+
+    /* ══ SCROLLBAR ══ */
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: var(--bg-2); }
+    ::-webkit-scrollbar-thumb { background: var(--line-faint); }
+    ::-webkit-scrollbar-thumb:hover { background: var(--ink-2); }
   </style>
-  <!-- 防止已登录时刷新页面闪过登录页 -->
-  <script>
-  (function() {
-    function getCookie(n) {
-      const m = document.cookie.split(';').find(c => c.trim().startsWith(n + '='));
-      return m ? m.split('=').slice(1).join('=').trim() : null;
-    }
-    if (getCookie('adminLoggedIn')) document.documentElement.classList.add('has-token');
-  })();
-</script>
 </head>
 <body>
   <div class="login-container" id="loginPage">
     <div class="login-box">
       <h1>管理后台</h1>
       <form id="loginForm">
-        <div class="form-group"><label>用户名</label><input type="text" id="username" required autocomplete="username"></div>
-        <div class="form-group"><label>密码</label><input type="password" id="password" required autocomplete="current-password"></div>
+        <div class="form-group">
+          <label>用户名</label>
+          <input type="text" id="username" required autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label>密码</label>
+          <input type="password" id="password" required autocomplete="current-password">
+        </div>
         <button type="submit" class="btn" style="width:100%">登录</button>
         <div class="error-msg" id="loginError"></div>
       </form>
@@ -253,9 +677,11 @@
   <div class="dashboard" id="dashboard">
     <div class="header">
       <h1>慧湖通管理后台</h1>
-      <button class="btn-secondary" id="darkModeToggle" onclick="toggleDarkMode()" style="margin-left:auto;margin-right:16px;">🌙 深色</button>
       <div class="header-actions">
-        <button class="btn-secondary" onclick="refreshData()" style="background:#007aff;color:white;">🔄 刷新</button><button class="btn-secondary" onclick="showNotificationModal()">通知</button><button class="btn-secondary" onclick="showBlacklistModal()">黑名单</button>
+        <button class="btn-secondary" id="darkModeToggle" onclick="toggleDarkMode()">🌙 深色</button>
+        <button class="btn-secondary" onclick="refreshData()">刷新</button>
+        <button class="btn-secondary" onclick="showNotificationModal()">通知</button>
+        <button class="btn-secondary" onclick="showBlacklistModal()">黑名单</button>
         <button class="btn-secondary" onclick="showClearLogsModal()">清理</button>
         <button class="btn-secondary" onclick="showChangePasswordModal()">密码</button>
         <button class="btn-secondary" onclick="logout()">退出</button>
@@ -264,18 +690,33 @@
 
     <div class="content">
       <div class="stats-grid">
-        <div class="stat-card"><div class="value" id="statTotal">-</div><div class="label">总访问</div></div>
-        <div class="stat-card" style="cursor:pointer;" onclick="showUsersModal()"><div class="value" id="statUnique">-</div><div class="label">用户数 ▶</div></div>
-        <div class="stat-card"><div class="value" id="statToday">-</div><div class="label">今日</div></div>
-        <div class="stat-card" style="cursor:pointer;" onclick="showBlacklistModal()"><div class="value danger" id="statBlocked">-</div><div class="label">已拉黑 ▶</div></div>
-        <div class="stat-card"><div class="value" id="statRetention">-</div><div class="label">保留</div></div>
+        <div class="stat-card">
+          <div class="value" id="statTotal">-</div>
+          <div class="label">总访问</div>
+        </div>
+        <div class="stat-card" style="cursor:pointer;" onclick="showUsersModal()">
+          <div class="value" id="statUnique">-</div>
+          <div class="label">用户数 ↗</div>
+        </div>
+        <div class="stat-card">
+          <div class="value" id="statToday">-</div>
+          <div class="label">今日</div>
+        </div>
+        <div class="stat-card" style="cursor:pointer;" onclick="showBlacklistModal()">
+          <div class="value danger" id="statBlocked">-</div>
+          <div class="label">已拉黑 ↗</div>
+        </div>
+        <div class="stat-card">
+          <div class="value" id="statRetention">-</div>
+          <div class="label">保留</div>
+        </div>
       </div>
 
       <div class="card">
         <div class="card-header">
           <h2>访问记录</h2>
           <div class="filters">
-            <input type="text" class="filter-input" placeholder="OpenID" id="filterOpenId" style="flex:2;">
+            <input type="text" class="filter-input" placeholder="OpenID" id="filterOpenId" style="flex:2;min-width:120px;">
             <select class="filter-select" id="filterAction">
               <option value="">全部操作</option>
               <option value="page_load">页面加载</option>
@@ -294,17 +735,26 @@
               <option value="windows">Windows</option>
               <option value="wechat">微信</option>
             </select>
-            <input type="date" class="filter-input" id="filterStartDate"><input type="date" class="filter-input" id="filterEndDate"><button class="filter-btn" onclick="applyFilters()">筛选</button>
+            <input type="date" class="filter-input" id="filterStartDate">
+            <input type="date" class="filter-input" id="filterEndDate">
+            <button class="filter-btn" onclick="applyFilters()">筛选</button>
             <button class="filter-btn reset" onclick="resetFilters()">重置</button>
           </div>
           <div class="note">* 设备版本号可能因浏览器隐私保护机制而显示不准确（Chrome 会冻结版本号）</div>
         </div>
 
         <!-- 桌面端表格 -->
-        <div class="table-wrapper" style="overflow-x:auto;">
+        <div class="table-wrapper">
           <table>
             <thead>
-              <tr><th style="width:120px;">时间</th><th style="width:180px;">OpenID</th><th style="width:80px;">操作</th><th style="width:140px;">设备</th><th style="width:170px;">IP</th><th style="width:80px;">管理</th></tr>
+              <tr>
+                <th style="width:120px;">时间</th>
+                <th style="width:180px;">OpenID</th>
+                <th style="width:80px;">操作</th>
+                <th style="width:140px;">设备</th>
+                <th style="width:170px;">IP</th>
+                <th style="width:90px;">管理</th>
+              </tr>
             </thead>
             <tbody id="logsTable"></tbody>
           </table>
@@ -317,8 +767,8 @@
         <div class="pagination-wrapper">
           <div class="pagination-nav" id="paginationNav"></div>
           <div class="pagination-jump">
-            <div>
-              <label>跳转到</label>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <label>跳至</label>
               <input type="number" id="jumpPageInput" min="1" value="1">
               <label>页</label>
               <button onclick="jumpToPage()">跳转</button>
@@ -335,8 +785,14 @@
     <div class="modal-content">
       <h2>修改密码</h2>
       <form id="changePasswordForm">
-        <div class="form-group"><label>当前密码</label><input type="password" id="oldPassword" required></div>
-        <div class="form-group"><label>新密码</label><input type="password" id="newPassword" required minlength="6"></div>
+        <div class="form-group">
+          <label>当前密码</label>
+          <input type="password" id="oldPassword" required>
+        </div>
+        <div class="form-group">
+          <label>新密码</label>
+          <input type="password" id="newPassword" required minlength="6">
+        </div>
         <div class="modal-actions">
           <button type="button" class="btn btn-outline" onclick="hideModal('changePasswordModal')">取消</button>
           <button type="submit" class="btn">确认</button>
@@ -350,11 +806,24 @@
     <div class="modal-content">
       <h2>清理日志</h2>
       <form id="clearLogsForm">
-        <div class="form-group"><label>自动清理保留天数</label>
-          <select id="retentionDays"><option value="7">7 天</option><option value="14">14 天</option><option value="30" selected>30 天</option><option value="60">60 天</option><option value="90">90 天</option></select>
+        <div class="form-group">
+          <label>自动清理保留天数</label>
+          <select id="retentionDays">
+            <option value="7">7 天</option>
+            <option value="14">14 天</option>
+            <option value="30" selected>30 天</option>
+            <option value="60">60 天</option>
+            <option value="90">90 天</option>
+          </select>
         </div>
-        <div class="form-group"><label>手动清理</label>
-          <select id="clearDays"><option value="7">清除 7 天前</option><option value="14">清除 14 天前</option><option value="30">清除 30 天前</option><option value="all">清除全部</option></select>
+        <div class="form-group">
+          <label>手动清理</label>
+          <select id="clearDays">
+            <option value="7">清除 7 天前</option>
+            <option value="14">清除 14 天前</option>
+            <option value="30">清除 30 天前</option>
+            <option value="all">清除全部</option>
+          </select>
         </div>
         <div class="modal-actions">
           <button type="button" class="btn btn-outline" onclick="hideModal('clearLogsModal')">取消</button>
@@ -370,8 +839,14 @@
     <div class="modal-content">
       <h2>设置标签</h2>
       <form id="tagForm">
-        <div class="form-group"><label>OpenID</label><input type="text" id="tagOpenId" readonly class="readonly-input"></div>
-        <div class="form-group"><label>备注标签</label><input type="text" id="tagValue" placeholder="输入备注（留空删除）" maxlength="50"></div>
+        <div class="form-group">
+          <label>OpenID</label>
+          <input type="text" id="tagOpenId" readonly class="readonly-input">
+        </div>
+        <div class="form-group">
+          <label>备注标签</label>
+          <input type="text" id="tagValue" placeholder="输入备注（留空删除）" maxlength="50">
+        </div>
         <div class="modal-actions">
           <button type="button" class="btn btn-outline" onclick="hideModal('tagModal')">取消</button>
           <button type="submit" class="btn">保存</button>
@@ -385,8 +860,14 @@
     <div class="modal-content">
       <h2>拉黑用户</h2>
       <form id="blockForm">
-        <div class="form-group"><label>OpenID</label><input type="text" id="blockOpenId" readonly class="readonly-input"></div>
-        <div class="form-group"><label>拉黑原因（可选）</label><textarea id="blockReason" rows="3" placeholder="输入拉黑原因"></textarea></div>
+        <div class="form-group">
+          <label>OpenID</label>
+          <input type="text" id="blockOpenId" readonly class="readonly-input">
+        </div>
+        <div class="form-group">
+          <label>拉黑原因（可选）</label>
+          <textarea id="blockReason" rows="3" placeholder="输入拉黑原因"></textarea>
+        </div>
         <div class="modal-actions">
           <button type="button" class="btn btn-outline" onclick="hideModal('blockModal')">取消</button>
           <button type="submit" class="btn btn-danger">确认拉黑</button>
@@ -395,18 +876,18 @@
     </div>
   </div>
 
-  <!-- Blacklist Modal -->
   <!-- Users Modal -->
   <div class="modal" id="usersModal">
-    <div class="modal-content" style="max-width:600px;">
+    <div class="modal-content" style="max-width:560px;">
       <h2>所有用户 (<span id="usersCount">0</span>)</h2>
-      <div id="usersList" style="max-height:400px;overflow-y:auto;"></div>
+      <div id="usersList" style="max-height:380px;overflow-y:auto;"></div>
       <div class="modal-actions">
         <button type="button" class="btn" onclick="hideModal('usersModal')">关闭</button>
       </div>
     </div>
   </div>
 
+  <!-- Blacklist Modal -->
   <div class="modal" id="blacklistModal">
     <div class="modal-content">
       <h2>黑名单管理</h2>
@@ -926,7 +1407,7 @@
 
       if (start > 1) {
         html += `<button onclick="goToPage(1)">1</button>`;
-        if (start > 2) html += `<span style="padding:0 4px;color:#999;">…</span>`;
+        if (start > 2) html += `<span style="padding:0 4px;color:var(--ink-2);">…</span>`;
       }
 
       for (let i = start; i <= end; i++) {
@@ -934,7 +1415,7 @@
       }
 
       if (end < p.totalPages) {
-        if (end < p.totalPages - 1) html += `<span style="padding:0 4px;color:#999;">…</span>`;
+        if (end < p.totalPages - 1) html += `<span style="padding:0 4px;color:var(--ink-2);">…</span>`;
         html += `<button onclick="goToPage(${p.totalPages})">${p.totalPages}</button>`;
       }
 
@@ -981,16 +1462,16 @@
           const active = n.is_active === 1;
           document.getElementById('notifAdminStatus').innerHTML =
             active
-              ? '<span style="color:#34c759;">● 当前有活跃通知（' + (n.type === 'always' ? '每次弹出' : '首次弹出') + '）</span>'
-              : '<span style="color:#888;">● 当前无活跃通知</span>';
+              ? '<span style="color:#2d7a4a;">● 当前有活跃通知（' + (n.type === 'always' ? '每次弹出' : '首次弹出') + '）</span>'
+              : '<span style="color:var(--ink-2);">● 当前无活跃通知</span>';
         } else {
           document.getElementById('notifAdminTitle').value = '';
           document.getElementById('notifAdminContent').value = '';
           document.getElementById('notifAdminType').value = 'once';
-          document.getElementById('notifAdminStatus').innerHTML = '<span style="color:#888;">● 当前无活跃通知</span>';
+          document.getElementById('notifAdminStatus').innerHTML = '<span style="color:var(--ink-2);">● 当前无活跃通知</span>';
         }
       } catch (e) {
-        document.getElementById('notifAdminStatus').innerHTML = '<span style="color:#ff3b30;">● 加载失败</span>';
+        document.getElementById('notifAdminStatus').innerHTML = '<span style="color:var(--accent);">● 加载失败</span>';
       }
       document.getElementById('notificationModal').style.display = 'flex';
     }
@@ -1035,7 +1516,7 @@
       if (!t) {
         t = document.createElement('div');
         t.id = 'adminToast';
-        t.style.cssText = 'position:fixed;bottom:32px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 20px;border-radius:20px;font-size:14px;z-index:9999;opacity:0;transition:opacity 0.2s;white-space:nowrap;';
+        t.style.cssText = 'position:fixed;bottom:32px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 20px;font-family:\'IBM Plex Mono\',monospace;font-size:12px;z-index:9999;opacity:0;transition:opacity 0.2s;white-space:nowrap;border-left:3px solid var(--accent);';
         document.body.appendChild(t);
       }
       t.textContent = msg;
@@ -1050,17 +1531,17 @@
   </script>
 
   <!-- 通知管理弹窗 -->
-  <div class="modal" id="notificationModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center;">
-    <div class="modal-content" style="max-width:440px;width:calc(100vw - 32px);">
-      <h2 style="margin-bottom:4px;">管理员通知</h2>
-      <div id="notifAdminStatus" style="font-size:13px;color:#888;margin-bottom:16px;"></div>
+  <div class="modal" id="notificationModal" style="display:none;position:fixed;inset:0;background:rgba(26,26,26,0.7);z-index:1000;align-items:center;justify-content:center;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);">
+    <div class="modal-content" style="max-width:440px;width:calc(100vw - 48px);">
+      <h2>管理员通知</h2>
+      <div id="notifAdminStatus"></div>
       <div class="form-group">
         <label>通知标题</label>
         <input type="text" id="notifAdminTitle" placeholder="通知标题（最多100字符）" maxlength="100">
       </div>
       <div class="form-group">
         <label>通知内容</label>
-        <textarea id="notifAdminContent" rows="5" placeholder="通知内容，支持换行（最多1000字符）" maxlength="1000" style="width:100%;padding:10px 12px;border:1px solid #e5e5ea;border-radius:10px;font-size:14px;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea>
+        <textarea id="notifAdminContent" rows="5" placeholder="通知内容，支持换行（最多1000字符）" maxlength="1000" style="resize:vertical;"></textarea>
       </div>
       <div class="form-group">
         <label>弹出方式</label>
@@ -1071,7 +1552,7 @@
       </div>
       <div class="modal-actions">
         <button type="button" class="btn btn-outline" onclick="hideModal('notificationModal')">取消</button>
-        <button type="button" class="btn" style="background:#ff3b30;color:white;border-color:#ff3b30;" onclick="disableNotification()">停用</button>
+        <button type="button" class="btn btn-danger" onclick="disableNotification()">停用</button>
         <button type="button" class="btn" onclick="saveNotification()">发布</button>
       </div>
     </div>

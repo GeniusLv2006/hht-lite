@@ -1,8 +1,11 @@
 {
-  "version": "v3.6.12",
+  "version": "v4.0.0",
   "date": "2026-04-01",
   "changes": [
-    "回滚 Glassmorphism UI 重构，恢复原始设计",
-    "强制刷新 PWA 缓存，确保所有客户端回退到正确版本"
+    "全量 UI 重构：Functional Brutalism 设计语言",
+    "前端 PWA 与管理后台完全统一视觉系统",
+    "字体升级：Bricolage Grotesque + IBM Plex Mono",
+    "双主题（浅色暖羊皮 / 深色深空）防闪优化",
+    "PWA manifest 主题色同步更新"
   ]
 }
