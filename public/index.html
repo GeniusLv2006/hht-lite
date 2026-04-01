@@ -1,0 +1,2336 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <link rel="icon" href="./ico.png?v=2" type="image/png">
+    <link rel="apple-touch-icon" href="./ico.png?v=2">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="./manifest.json">
+    <meta name="apple-mobile-web-app-title" content="慧湖通极速版">
+    <meta name="theme-color" content="#f5f5f7">
+    <meta name="background-color" content="#f5f5f7">
+    <!-- DNS 预解析和预连接 -->
+    <link rel="dns-prefetch" href="//api.215123.cn">
+    <link rel="preconnect" href="https://api.215123.cn" crossorigin>
+    <title>慧湖通极速版</title>
+    <!-- iOS 启动画面 - 防止黑屏 -->
+    <style>
+        /* 关键 CSS 内联 - 立即渲染背景色防止黑屏 */
+        :root {
+            --bg-primary: #f5f5f7;
+            --bg-secondary: #ffffff;
+            --text-primary: #1d1d1f;
+            --text-secondary: #86868b;
+            --accent-color: #007aff;
+            --accent-hover: #0066d6;
+            --border-color: rgba(0, 0, 0, 0.08);
+            --shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #000000;
+            --bg-secondary: #1c1c1e;
+            --text-primary: #f5f5f7;
+            --text-secondary: #86868b;
+            --accent-color: #0a84ff;
+            --accent-hover: #409cff;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root:not([data-theme="light"]) {
+                --bg-primary: #000000;
+                --bg-secondary: #1c1c1e;
+                --text-primary: #f5f5f7;
+                --text-secondary: #86868b;
+                --accent-color: #0a84ff;
+                --accent-hover: #409cff;
+                --border-color: rgba(255, 255, 255, 0.1);
+                --shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            touch-action: manipulation;
+            overscroll-behavior: none;
+            -webkit-overflow-scrolling: none;
+            background-color: var(--bg-primary);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            transition: background-color 0.3s ease, color 0.3s ease;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            letter-spacing: -0.01em;
+        }
+
+        /* 启动加载屏 */
+        #splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--bg-primary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+            box-sizing: border-box;
+            z-index: 9999;
+            transition: opacity 0.3s ease;
+        }
+
+        #splash-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .splash-icon {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 16px;
+            border-radius: 18px;
+        }
+
+        .splash-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .splash-loading {
+            width: 24px;
+            height: 24px;
+            border: 2px solid var(--border-color);
+            border-top-color: var(--accent-color);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-top: 16px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        #header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: var(--bg-primary);
+            flex-shrink: 0;
+        }
+
+        #header-title {
+            font-size: 17px;
+            font-weight: 600;
+        }
+
+        .header-btn {
+            width: 36px;
+            height: 36px;
+            background: var(--bg-secondary);
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            box-shadow: var(--shadow);
+        }
+
+        .header-btn:active {
+            transform: scale(0.95);
+            opacity: 0.8;
+        }
+
+        .header-btn .button-icon {
+            width: 18px;
+            height: 18px;
+        }
+
+        /* 主题图标平滑过渡 */
+        #theme-toggle {
+            position: relative;
+        }
+
+        #theme-toggle .button-icon {
+            position: absolute;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+
+        #theme-toggle .button-icon.hidden {
+            opacity: 0;
+            transform: scale(0.8);
+        }
+
+        #theme-toggle .button-icon.visible {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            min-height: 0;
+        }
+
+        #qrcode-container {
+            background: var(--bg-secondary);
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: clamp(280px, min(80vw, 68vh), 480px);
+            aspect-ratio: 1;
+            padding: 5%;
+            position: relative;
+        }
+
+        #qrcode {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            background-color: #ffffff;
+            border-radius: 12px;
+            transition: opacity 0.3s ease;
+        }
+
+        #qrcode img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        /* 二维码加载状态 */
+        #qrcode-container.loading::before {
+            content: '';
+            position: absolute;
+            top: calc(50% - 20px);
+            left: calc(50% - 20px);
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border-color);
+            border-top-color: var(--accent-color);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            z-index: 1;
+        }
+
+        #qrcode-container.loading #qrcode {
+            opacity: 0.3;
+        }
+
+        #tips {
+            margin-top: 20px;
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-weight: 500;
+            flex-shrink: 0;
+            text-align: center;
+        }
+
+        #btn-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: clamp(280px, 80vw, 480px);
+            padding: 16px;
+            flex-shrink: 0;
+            margin: 0 auto;
+        }
+
+        #refreshQRCodeBtn {
+            width: 100%;
+            padding: 14px 24px;
+            background: linear-gradient(135deg, #007aff 0%, #5856d6 100%);
+            box-shadow: 0 4px 15px rgba(0, 122, 255, 0.35);
+            color: #ffffff;
+            border: none;
+            border-radius: 14px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            letter-spacing: 0;
+        }
+
+        #refreshQRCodeBtn:active {
+            transform: scale(0.98);
+            background: linear-gradient(135deg, #0066d6 0%, #4845b3 100%);
+            box-shadow: 0 2px 10px rgba(0, 122, 255, 0.4);
+        }
+
+        #refreshQRCodeBtn:disabled {
+            background: linear-gradient(135deg, #ff3b30 0%, #ff6b35 100%);
+            box-shadow: 0 4px 15px rgba(255, 59, 48, 0.3);
+            cursor: not-allowed;
+            opacity: 1;
+        }
+
+        #refreshQRCodeBtn .button-icon {
+            width: 20px;
+            height: 20px;
+        }
+
+        /* 自动刷新切换开关 */
+        #auto-refresh-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 14px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 44px;
+            height: 26px;
+            flex-shrink: 0;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+            position: absolute;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            inset: 0;
+            background: var(--border-color);
+            border-radius: 26px;
+            transition: background 0.2s ease;
+            cursor: pointer;
+        }
+
+        .toggle-slider::before {
+            content: '';
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            left: 2px;
+            top: 2px;
+            background: #ffffff;
+            border-radius: 50%;
+            transition: transform 0.2s ease;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+        }
+
+        .toggle-switch input:checked + .toggle-slider {
+            background: #34c759;
+        }
+
+        .toggle-switch input:checked + .toggle-slider::before {
+            transform: translateX(18px);
+        }
+
+        /* 弹窗遮罩暗色模式 */
+        [data-theme="dark"] #rate-limit-modal,
+        [data-theme="dark"] #input-dialog,
+        [data-theme="dark"] #notif-modal,
+        [data-theme="dark"] #version-modal,
+        [data-theme="dark"] #agreement-modal { background: rgba(0, 0, 0, 0.6) !important; }
+        @media (prefers-color-scheme: dark) {
+            :root:not([data-theme="light"]) #rate-limit-modal,
+            :root:not([data-theme="light"]) #input-dialog,
+            :root:not([data-theme="light"]) #notif-modal,
+            :root:not([data-theme="light"]) #version-modal,
+            :root:not([data-theme="light"]) #agreement-modal { background: rgba(0, 0, 0, 0.6) !important; }
+        }
+
+        /* 请求频率限制弹窗 */
+        #rate-limit-modal {
+            display: flex;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+            box-sizing: border-box;
+            z-index: 1010;
+            opacity: 0;
+            pointer-events: none;
+            visibility: hidden;
+        }
+
+        .rate-limit-content {
+            background: var(--bg-secondary);
+            border-radius: 20px;
+            width: calc(100% - 48px);
+            max-width: 320px;
+            max-height: 55svh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .rate-limit-header {
+            padding: 22px 20px 14px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .rate-limit-icon {
+            font-size: 20px;
+        }
+
+        .rate-limit-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .rate-limit-body {
+            font-size: 13px;
+            color: var(--text-primary);
+            line-height: 1.6;
+            padding: 0 20px 16px;
+            flex: 1;
+            opacity: 0.88;
+        }
+
+        .rate-limit-footer {
+            padding: 16px 20px;
+            flex-shrink: 0;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .rate-limit-footer button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #007aff 0%, #5856d6 100%);
+            color: #ffffff;
+            border: none;
+            border-radius: 12px;
+            font-family: inherit;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s ease;
+        }
+
+        .rate-limit-footer button:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+
+        #message-box {
+            position: fixed;
+            top: calc(12px + env(safe-area-inset-top));
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #ff3b30;
+            color: #ffffff;
+            padding: 12px 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(255, 59, 48, 0.3);
+            display: none;
+            z-index: 1003;
+            font-size: 14px;
+            font-weight: 500;
+            max-width: 90vw;
+            text-align: center;
+        }
+
+        #message-box.success {
+            background-color: #34c759;
+            box-shadow: 0 4px 20px rgba(52, 199, 89, 0.3);
+        }
+
+        #input-dialog {
+            display: flex;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+            box-sizing: border-box;
+            z-index: 1001;
+            opacity: 0;
+            pointer-events: none;
+            visibility: hidden;
+        }
+
+        .dialog-content {
+            background-color: var(--bg-secondary);
+            padding: 24px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            width: calc(100vw - 48px);
+            max-width: 320px;
+        }
+
+        #dialog-message {
+            display: block;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+        }
+
+        #input-dialog input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.2s ease;
+        }
+
+        #input-dialog input:focus {
+            border-color: var(--accent-color);
+        }
+
+        #btn-area-msgbox {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        #btn-area-msgbox button {
+            flex: 1;
+            padding: 14px;
+            border-radius: 12px;
+            font-family: inherit;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        #dialog-confirm {
+            background: linear-gradient(135deg, #007aff 0%, #5856d6 100%);
+            box-shadow: 0 4px 15px rgba(0, 122, 255, 0.35);
+            color: #ffffff;
+            border: none;
+        }
+
+        #dialog-confirm:active {
+            background: linear-gradient(135deg, #0066d6 0%, #4845b3 100%);
+            box-shadow: 0 2px 10px rgba(0, 122, 255, 0.4);
+        }
+
+        #dialog-cancel {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        #dialog-cancel:active {
+            background: var(--border-color);
+        }
+
+        input, textarea, button {
+            font-family: inherit;
+        }
+
+        #iosPrompt {
+            display: none;
+            position: fixed;
+            bottom: env(safe-area-inset-bottom);
+            left: 0;
+            right: 0;
+            background-color: var(--bg-secondary);
+            border-top: 1px solid var(--border-color);
+            margin: 0 16px 16px;
+            border-radius: 20px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.15);
+            padding: 20px;
+            text-align: center;
+            font-size: 14px;
+            z-index: 1000;
+            color: var(--text-primary);
+        }
+
+        #iosPrompt p {
+            margin: 0 0 16px 0;
+            line-height: 1.6;
+        }
+
+        #iosPrompt span {
+            font-weight: 600;
+            color: var(--accent-color);
+        }
+
+        .inline-icon {
+            width: 16px;
+            height: 16px;
+            vertical-align: middle;
+            margin: 0 2px;
+        }
+
+        #closePrompt {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #007aff 0%, #5856d6 100%);
+            box-shadow: 0 4px 15px rgba(0, 122, 255, 0.35);
+            color: #ffffff;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .version-text {
+            text-align: center;
+            font-size: 11px;
+            color: #999;
+            margin-bottom: 8px;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+
+        .version-text:active {
+            background-color: var(--border-color);
+        }
+
+        .version-footer-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .version-footer-row .version-text {
+            margin-bottom: 0;
+        }
+
+        .version-text-sep {
+            font-size: 11px;
+            color: #999;
+            padding: 4px 2px;
+        }
+
+        #notif-modal {
+            display: flex;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+            box-sizing: border-box;
+            z-index: 1003;
+            opacity: 0;
+            pointer-events: none;
+            visibility: hidden;
+        }
+        .notif-modal-content {
+            background: var(--bg-secondary);
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.22);
+            width: calc(100% - 48px);
+            max-width: 360px;
+            max-height: 70svh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .notif-modal-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 22px 20px 14px;
+            flex-shrink: 0;
+        }
+        .notif-modal-badge {
+            font-size: 11px;
+            font-weight: 600;
+            color: white;
+            background: #ff9500;
+            padding: 2px 8px;
+            border-radius: 20px;
+            flex-shrink: 0;
+        }
+        .notif-modal-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        .notif-modal-body {
+            font-size: 13px;
+            color: var(--text-primary);
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-break: break-word;
+            padding: 0 20px 16px;
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            opacity: 0.88;
+        }
+        .notif-modal-footer {
+            padding: 16px 20px;
+            flex-shrink: 0;
+            border-top: 1px solid var(--border-color);
+        }
+        #close-notif-modal {
+            width: 100%;
+            padding: 13px;
+            background: var(--accent-color, #007aff);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        #version-modal {
+            display: flex;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+            box-sizing: border-box;
+            z-index: 1002;
+            opacity: 0;
+            pointer-events: none;
+            visibility: hidden;
+        }
+
+        .version-modal-content {
+            background-color: var(--bg-secondary);
+            padding: 24px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            width: calc(100% - 48px);
+            max-width: 360px;
+            max-height: 78svh;
+            overflow-y: auto;
+        }
+
+        .version-modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+        }
+
+        .version-item {
+            margin-bottom: 16px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .version-item:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+
+        .version-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .version-item-version {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--accent-color);
+        }
+
+        .version-item-date {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .version-item-changes {
+            font-size: 13px;
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .version-item-changes li {
+            margin-left: 16px;
+            margin-bottom: 4px;
+        }
+
+        #close-version-modal {
+            width: 100%;
+            padding: 12px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            margin-top: 16px;
+        }
+
+        /* 服务协议弹窗 */
+        #agreement-modal {
+            display: flex;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+            box-sizing: border-box;
+            z-index: 10002;
+            opacity: 0;
+            pointer-events: none;
+            visibility: hidden;
+            transition: opacity 0.25s ease;
+        }
+
+        #agreement-modal.show {
+            opacity: 1;
+            pointer-events: auto;
+            visibility: visible;
+        }
+
+        .agreement-modal-content {
+            background-color: var(--bg-secondary);
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            width: calc(100% - 32px);
+            max-width: 420px;
+            max-height: 78svh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .agreement-header {
+            padding: 20px 20px 12px;
+            flex-shrink: 0;
+        }
+
+        .agreement-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 4px;
+            color: var(--text-primary);
+            text-align: center;
+        }
+
+        .agreement-date {
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+
+        .agreement-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0 20px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .agreement-footer {
+            padding: 16px 20px;
+            flex-shrink: 0;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .agreement-section {
+            margin-bottom: 16px;
+        }
+
+        .agreement-section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .agreement-section-title::before {
+            content: '';
+            display: inline-block;
+            width: 4px;
+            height: 14px;
+            background: var(--accent-color);
+            border-radius: 2px;
+        }
+
+        .agreement-section-content {
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.7;
+            padding-left: 10px;
+        }
+
+        .agreement-section-content p {
+            margin-bottom: 6px;
+        }
+
+        .agreement-section-content ul {
+            margin: 6px 0;
+            padding-left: 16px;
+        }
+
+        .agreement-section-content li {
+            margin-bottom: 4px;
+        }
+
+        .agreement-section-content a {
+            color: var(--accent-color);
+            text-decoration: underline;
+        }
+
+        .agreement-section-content .note {
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .agreement-section-content .warning {
+            color: #ff9500;
+        }
+
+        .agreement-checkbox {
+            margin-bottom: 12px;
+            padding: 10px 12px;
+            background: var(--bg-primary);
+            border-radius: 10px;
+        }
+
+        .agreement-checkbox label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            font-size: 13px;
+            color: var(--text-primary);
+        }
+
+        .agreement-checkbox input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--accent-color);
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .agreement-buttons {
+            display: flex;
+            gap: 12px;
+        }
+
+        .agreement-buttons button {
+            flex: 1;
+            padding: 14px;
+            border-radius: 12px;
+            font-family: inherit;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        #agreement-decline {
+            background: var(--bg-primary);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+        }
+
+        #agreement-decline:active {
+            background: var(--border-color);
+        }
+
+        #agreement-accept {
+            background: linear-gradient(135deg, #007aff 0%, #5856d6 100%);
+            box-shadow: 0 4px 15px rgba(0, 122, 255, 0.35);
+            color: #ffffff;
+            border: none;
+        }
+
+        #agreement-accept:active:not(:disabled) {
+            background: linear-gradient(135deg, #0066d6 0%, #4845b3 100%);
+        }
+
+        #agreement-accept:disabled {
+            background: var(--text-secondary);
+            box-shadow: none;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        #agreement-close-view {
+            flex: 1;
+            padding: 14px;
+            border-radius: 12px;
+            font-family: inherit;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: linear-gradient(135deg, #007aff 0%, #5856d6 100%);
+            box-shadow: 0 4px 15px rgba(0, 122, 255, 0.35);
+            color: #ffffff;
+            border: none;
+        }
+
+        #agreement-close-view:active {
+            background: linear-gradient(135deg, #0066d6 0%, #4845b3 100%);
+        }
+
+        /* 拒绝协议后的遮罩 */
+        #declined-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-primary);
+            z-index: 10001;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            text-align: center;
+        }
+
+        .declined-icon {
+            width: 64px;
+            height: 64px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+
+        .declined-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .declined-text {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 24px;
+            line-height: 1.6;
+        }
+
+        #reopen-agreement {
+            padding: 12px 24px;
+            background: var(--accent-color);
+            color: #ffffff;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+    </style>
+    <script>
+        // 立即应用主题，避免闪烁
+        (function() {
+            const savedTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (savedTheme) {
+                document.documentElement.setAttribute('data-theme', savedTheme);
+            }
+            // 更新 meta theme-color
+            const isDark = savedTheme === 'dark' || (!savedTheme && prefersDark);
+            const themeColor = isDark ? '#000000' : '#f5f5f7';
+            document.querySelector('meta[name="theme-color"]')?.setAttribute('content', themeColor);
+        })();
+    </script>
+    <!-- 预加载启动图标，与 HTML 并行下载 -->
+    <link rel="preload" as="image" href="./ico.png">
+    <!-- QR 库延迟加载，不阻塞页面解析 -->
+    <script defer src="./qr.min.js"></script>
+</head>
+
+<body>
+    <!-- 启动加载屏 -->
+    <div id="splash-screen">
+        <img src="./ico.png" alt="Logo" class="splash-icon">
+        <div class="splash-title">慧湖通极速版</div>
+        <div class="splash-loading"></div>
+    </div>
+
+    <div id="message-box"></div>
+    <div id="input-dialog">
+        <div class="dialog-content">
+            <span id="dialog-message"></span>
+            <input type="text" id="dialog-input" placeholder="请输入 OpenID">
+            <div id="btn-area-msgbox">
+                <button id="dialog-cancel">取消</button>
+                <button id="dialog-confirm">确认</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="header">
+        <button id="theme-toggle" class="header-btn" title="切换深色模式">
+            <svg class="button-icon visible" id="theme-icon-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+            <svg class="button-icon hidden" id="theme-icon-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+        </button>
+        <div id="header-title">慧湖通极速版</div>
+        <button id="setOpenIdBtn" class="header-btn" title="设置">
+            <svg class="button-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+    </div>
+
+    <div class="main-content">
+        <div id="qrcode-container">
+            <div id="qrcode"></div>
+        </div>
+        <div id="tips">请点击下方按钮生成二维码</div>
+    </div>
+
+    <div id="btn-area">
+        <div class="version-footer-row">
+            <span class="version-text" id="version-btn">···</span>
+            <span class="version-text-sep"> · </span>
+            <span class="version-text" id="terms-btn">服务协议</span>
+        </div>
+        <button id="refreshQRCodeBtn">
+            <svg class="button-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+            刷新二维码
+        </button>
+        <label id="auto-refresh-toggle" title="开启后二维码将每8秒自动刷新">
+            <span>自动刷新</span>
+            <span class="toggle-switch">
+                <input type="checkbox" id="auto-refresh-checkbox">
+                <span class="toggle-slider"></span>
+            </span>
+        </label>
+    </div>
+
+    <!-- 请求频率限制弹窗 -->
+    <div id="rate-limit-modal">
+        <div class="rate-limit-content">
+            <div class="rate-limit-header">
+                <span class="rate-limit-icon">⚡</span>
+                <span class="rate-limit-title">请求速度过快</span>
+            </div>
+            <div class="rate-limit-body">60 秒内刷新次数已达上限，请稍作等待后继续使用。</div>
+            <div class="rate-limit-footer">
+                <button id="close-rate-limit" disabled></button>
+            </div>
+        </div>
+    </div>
+
+    <div id="iosPrompt">
+        <p>点击 <svg class="inline-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" x2="12" y1="2" y2="15"/></svg> 分享按钮，然后选择<br><span><svg class="inline-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M12 8v8M8 12h8"/></svg> 添加到主屏幕</span></p>
+        <button id="closePrompt">知道了</button>
+    </div>
+
+    <!-- 管理员通知弹窗 -->
+    <div id="notif-modal">
+        <div class="notif-modal-content">
+            <div class="notif-modal-header">
+                <span class="notif-modal-badge">通知</span>
+                <span class="notif-modal-title" id="notif-modal-title"></span>
+            </div>
+            <div class="notif-modal-body" id="notif-modal-body"></div>
+            <div class="notif-modal-footer">
+                <button id="close-notif-modal">我知道了</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="version-modal">
+        <div class="version-modal-content">
+            <div class="version-modal-title">版本更新日志</div>
+            <div id="version-list"></div>
+            <button id="close-version-modal">关闭</button>
+        </div>
+    </div>
+
+    <!-- 服务说明与使用协议弹窗 -->
+    <div id="agreement-modal">
+        <div class="agreement-modal-content">
+            <div class="agreement-header">
+                <div class="agreement-title">服务说明与使用协议</div>
+                <div class="agreement-date">生效日期：2026 年 3 月 4 日</div>
+            </div>
+
+            <div class="agreement-body">
+                <div class="agreement-section">
+                    <div class="agreement-section-title">1. 定义</div>
+                    <div class="agreement-section-content">
+                        <ul>
+                            <li><strong>"本服务"</strong>：指通过 huihutong.xjtlu.uk 提供的宿舍门禁二维码生成功能及全部相关内容。</li>
+                            <li><strong>"开发者"</strong>：指本服务的独立开发者及运营者。</li>
+                            <li><strong>"用户"</strong>：指访问或使用本服务的任何个人。</li>
+                            <li><strong>"OpenID"</strong>：指用户在慧湖通系统中的唯一身份标识符，同时作为宿舍门禁二维码的生成凭据。</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="agreement-section">
+                    <div class="agreement-section-title">2. 服务性质与独立声明</div>
+                    <div class="agreement-section-content">
+                        <p>本服务系开发者独立开发与运营的非营利性个人项目，其功能为调用慧湖通官方 API 生成宿舍门禁二维码，旨在提升用户使用体验。</p>
+                        <p>本服务与以下机构<strong>不存在任何形式的隶属、授权、合作或背书关系</strong>：西交利物浦大学（XJTLU）、苏州独墅湖科教发展有限公司。</p>
+                        <p><strong>商标声明：</strong>"慧湖通"为苏州独墅湖科教发展有限公司的注册商标。本服务对该名称的使用仅出于描述性目的，以说明本服务所对接的官方系统，不暗示任何形式的关联或授权。</p>
+                        <p>本服务以非正式方式发布，<strong>不构成上述任何机构的官方产品或服务</strong>。如需使用官方服务，请通过慧湖通官方小程序操作。</p>
+                    </div>
+                </div>
+
+                <div class="agreement-section">
+                    <div class="agreement-section-title">3. 数据收集与隐私保护</div>
+                    <div class="agreement-section-content">
+                        <p><strong>3.1 数据收集范围</strong></p>
+                        <ul>
+                            <li><strong>OpenID、IP 地址：</strong>由开发者收集，用于调用官方 API 生成二维码及安全审计，作为服务器安全日志留存，保留期不超过 30 天。</li>
+                            <li><strong>服务器访问日志：</strong>由开发者收集，用于安全审计与故障排查，保留期不超过 30 天。</li>
+                            <li><strong>匿名统计数据：</strong>由 Cloudflare 收集，用于网站访问量统计分析，依 Cloudflare 隐私政策独立处理。</li>
+                        </ul>
+                        <p><strong>3.2 Cloudflare Web Analytics</strong></p>
+                        <p>本服务集成 Cloudflare Web Analytics，仅收集匿名聚合统计信息（如页面访问量、访问来源地区等），不追踪个人用户身份，不使用 Cookie。相关数据由 Cloudflare, Inc. 依其隐私政策独立处理与存储，开发者无法获取任何个人身份信息。</p>
+                        <p><strong>3.3 数据使用原则</strong></p>
+                        <ul>
+                            <li>开发者持有的数据<strong>仅用于服务安全维护目的</strong>，不用于任何商业目的，不向无关第三方出售、出租或披露。</li>
+                            <li>数据传输全程采用 <strong>HTTPS 加密协议</strong>保护。</li>
+                            <li>日志数据将定期清理，<strong>保留期不超过 30 天</strong>。</li>
+                        </ul>
+                        <p><strong>3.4 安全事件响应</strong></p>
+                        <p>如发生数据安全事件，开发者将在知悉后尽合理努力于本服务显著位置公开披露相关情况及已采取的补救措施。</p>
+                    </div>
+                </div>
+
+                <div class="agreement-section">
+                    <div class="agreement-section-title">4. 用户权利</div>
+                    <div class="agreement-section-content">
+                        <p>依据中华人民共和国《个人信息保护法》，用户对本人相关数据享有查阅、更正及删除等法定权利，可通过第 12 条所列联系方式与开发者取得联系以行使上述权利。</p>
+                    </div>
+                </div>
+
+                <div class="agreement-section">
+                    <div class="agreement-section-title">5. 欧盟及英国用户补充条款（GDPR）</div>
+                    <div class="agreement-section-content">
+                        <p>本条款适用于位于欧盟成员国及英国境内的用户，依据 GDPR 及 UK GDPR 制定，与本协议其余条款并行适用。</p>
+                        <p><strong>5.1 数据处理的法律依据：</strong>处理 OpenID 及 IP 地址以提供二维码生成功能（履行服务）；处理访问日志以保障服务安全与稳定运行（合法利益）。</p>
+                        <p><strong>5.2 GDPR 框架下的额外权利：</strong>数据可携权、被遗忘权、反对权、限制处理权。</p>
+                        <p><strong>5.3 数据跨境传输：</strong>Cloudflare 已加入欧盟-美国数据隐私框架（EU-U.S. Data Privacy Framework），提供符合 GDPR 要求的跨境传输保障机制。</p>
+                        <p><strong>5.4 向监管机构投诉的权利：</strong>如认为本服务对您个人数据的处理方式违反了 GDPR，您有权向所在成员国的数据保护监管机构提出投诉，该权利不受本协议任何条款的限制。</p>
+                    </div>
+                </div>
+
+                <div class="agreement-section">
+                    <div class="agreement-section-title">6. 服务访问限制</div>
+                    <div class="agreement-section-content">
+                        <p>开发者保留对存在异常行为或滥用本服务的账户限制其访问权限的权利，且无需事先通知。</p>
+                        <ul>
+                            <li>受限用户将收到明确的访问拒绝提示及说明。</li>
+                            <li>本服务的访问限制<strong>不影响用户通过慧湖通官方小程序使用相关功能</strong>。</li>
+                            <li>如用户认为限制系误操作，可通过第 12 条联系方式向开发者提出申诉。</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="agreement-section">
+                    <div class="agreement-section-title">7. 免责声明</div>
+                    <div class="agreement-section-content">
+                        <p><strong>7.1 服务可用性：</strong>开发者保留随时暂停、修改或终止本服务的权利，无需事先通知，且不对服务的持续可用性、功能完整性或信息准确性作任何明示或暗示的保证。</p>
+                        <p><strong>特别提示：</strong>本服务依赖慧湖通官方 API 运行。如官方 API 发生变更、限制或停止服务，本服务可能随时受到影响乃至无法正常使用。在任何情况下，<strong>慧湖通官方小程序始终可作为替代方案</strong>。</p>
+                        <p><strong>7.2 责任限制：</strong>本服务按"现状"（As-Is）提供。在适用法律允许的最大范围内，因服务中断或数据丢失、第三方平台（包括 Cloudflare、慧湖通官方系统）的故障或变更、用户违反本协议的行为、不可抗力事件等原因导致的任何直接或间接损失，开发者不承担赔偿责任。</p>
+                        <p><strong>7.3 用户责任：</strong>用户须在遵守中华人民共和国相关法律法规的前提下使用本服务，并自行承担因使用本服务所产生的一切风险与责任。</p>
+                    </div>
+                </div>
+
+                <div class="agreement-section">
+                    <div class="agreement-section-title">8. 安全提示</div>
+                    <div class="agreement-section-content">
+                        <p>OpenID 是您在慧湖通系统中的唯一身份标识，<strong>同时也是生成宿舍门禁二维码的直接访问凭据</strong>，其安全性与您的人身及财产安全直接相关。</p>
+                        <ul>
+                            <li class="warning">OpenID 一旦泄露，他人即可利用其生成您的门禁二维码，<strong>对宿舍物理安全构成直接威胁</strong>。</li>
+                            <li>请务必妥善保管，<strong>切勿以截图、转发或任何其他形式向他人披露</strong>。</li>
+                            <li>如怀疑 OpenID 已遭泄露或被滥用，请立即停止使用本服务并联系开发者。</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="agreement-section">
+                    <div class="agreement-section-title">9. 适用范围与管辖地声明</div>
+                    <div class="agreement-section-content">
+                        <p>本服务面向中国大陆地区用户设计与运营。若用户从其他国家或地区主动访问并使用本服务，应自行评估并承担其本地法律法规合规义务，开发者不对本服务是否符合中华人民共和国法律体系以外的任何司法管辖区法律作出任何声明或保证。</p>
+                    </div>
+                </div>
+
+                <div class="agreement-section">
+                    <div class="agreement-section-title">10. 协议变更</div>
+                    <div class="agreement-section-content">
+                        <p>开发者保留随时修改本协议的权利。协议更新后，将在本页面同步更新版本号及生效日期。用户在协议更新后继续使用本服务，即视为已阅读并接受更新后的全部条款。</p>
+                    </div>
+                </div>
+
+                <div class="agreement-section">
+                    <div class="agreement-section-title">11. 适用法律与争议解决</div>
+                    <div class="agreement-section-content">
+                        <p>本协议的订立、解释与执行均适用<strong>中华人民共和国法律</strong>。因本协议引起的或与本协议相关的任何争议，双方应首先通过友好协商解决；协商不成的，提交开发者所在地有管辖权的人民法院依法裁决。</p>
+                    </div>
+                </div>
+
+                <div class="agreement-section">
+                    <div class="agreement-section-title">12. 联系方式</div>
+                    <div class="agreement-section-content">
+                        <p>如对本协议有任何疑问，或需行使数据相关权利，请通过以下方式联系开发者：</p>
+                        <ul>
+                            <li><strong>电子邮件：</strong>shinnosuke8848@icloud.com</li>
+                        </ul>
+                        <p><em>本协议自用户点击"同意"之时起生效。</em></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="agreement-footer" id="agreement-accept-footer">
+                <div class="agreement-checkbox">
+                    <label>
+                        <input type="checkbox" id="agreement-check">
+                        <span>我已阅读并理解以上内容</span>
+                    </label>
+                </div>
+                <div class="agreement-buttons">
+                    <button id="agreement-decline">拒绝</button>
+                    <button id="agreement-accept" disabled>请阅读协议 (5)</button>
+                </div>
+            </div>
+            <div class="agreement-footer" id="agreement-view-footer" style="display:none;">
+                <div class="agreement-buttons">
+                    <button id="agreement-close-view">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 拒绝协议后的遮罩 -->
+    <div id="declined-overlay">
+        <svg class="declined-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 8v4M12 16h.01"/>
+        </svg>
+        <div class="declined-title">无法使用服务</div>
+        <div class="declined-text">您需要同意服务协议才能继续使用本应用</div>
+        <button id="reopen-agreement">重新查看协议</button>
+    </div>
+
+    <!-- QR Code Generator (v1.4.4) - 本地自托管，defer 加载避免阻塞 -->
+    <script>
+        function updateThemeIcon() {
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark' ||
+                (!document.documentElement.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+            const lightIcon = document.getElementById('theme-icon-light');
+            const darkIcon = document.getElementById('theme-icon-dark');
+            // 使用 class 切换实现平滑过渡
+            lightIcon.classList.toggle('visible', !isDark);
+            lightIcon.classList.toggle('hidden', isDark);
+            darkIcon.classList.toggle('visible', isDark);
+            darkIcon.classList.toggle('hidden', !isDark);
+            const themeColor = isDark ? '#000000' : '#f5f5f7';
+            document.querySelector('meta[name="theme-color"]').setAttribute('content', themeColor);
+        }
+
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            let newTheme;
+            if (!currentTheme) {
+                newTheme = prefersDark ? 'light' : 'dark';
+            } else {
+                newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            }
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeIcon();
+        }
+
+        document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+        updateThemeIcon();
+
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+            if (!localStorage.getItem('theme')) {
+                updateThemeIcon();
+            }
+        });
+    </script>
+
+    <script>
+        function isIos() {
+            return /iPhone/.test(navigator.userAgent) && !window.matchMedia("(display-mode: standalone)").matches;
+        }
+
+        function isInStandaloneMode() {
+            return ('standalone' in navigator) && navigator.standalone;
+        }
+
+        function showIosPrompt() {
+            if (isIos() && !isInStandaloneMode() && !localStorage.getItem('iosPromptClosed')) {
+                document.getElementById('iosPrompt').style.display = 'block';
+            }
+        }
+
+        document.getElementById('closePrompt').addEventListener('click', function () {
+            document.getElementById('iosPrompt').style.display = 'none';
+            localStorage.setItem('iosPromptClosed', 'true');
+        });
+
+        window.addEventListener('load', showIosPrompt);
+    </script>
+
+    <script>
+        // XSS 防护：HTML 实体转义
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/[&<>"']/g, c => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            })[c]);
+        }
+
+        // satoken localStorage 缓存（跨 PWA 会话复用，避免每次冷启动重新取 token）
+        const SATOKEN_CACHE_KEY = 'satoken_cache';
+        const SATOKEN_TTL_MS = 24 * 60 * 60 * 1000; // 24 小时
+
+        function loadCachedSatoken() {
+            try {
+                const c = JSON.parse(localStorage.getItem(SATOKEN_CACHE_KEY) || '{}');
+                if (c.token && typeof c.exp === 'number' && c.exp > Date.now()) return c.token;
+            } catch {}
+            return '';
+        }
+
+        function saveSatokenCache(token) {
+            try {
+                localStorage.setItem(SATOKEN_CACHE_KEY, JSON.stringify({ token, exp: Date.now() + SATOKEN_TTL_MS }));
+            } catch {}
+        }
+
+        function clearSatokenCache() {
+            localStorage.removeItem(SATOKEN_CACHE_KEY);
+        }
+
+        let openId = localStorage.getItem('openId') || '';
+        let satoken = sessionStorage.getItem('satoken') || loadCachedSatoken();
+        const REQUEST_INTERVAL = 8 * 1000;
+        let retryCount = 0;
+        const MAX_RETRY_COUNT = 5;
+        const BASE_RETRY_DELAY = 2000;
+
+        // 黑名单缓存
+        const BLACKLIST_CACHE_KEY = 'blacklist_cache';
+        const BLACKLIST_CACHE_DURATION = 5 * 60 * 1000; // 5 分钟
+
+        let isInitialLoad = true;
+
+        const tipsElement = document.getElementById('tips');
+        const qrcodeElement = document.getElementById('qrcode');
+        const setOpenIdBtn = document.getElementById('setOpenIdBtn');
+        const refreshQRCodeBtn = document.getElementById('refreshQRCodeBtn');
+        const REFRESH_BTN_ORIGINAL_HTML = refreshQRCodeBtn.innerHTML;
+
+        function applyButtonFreeze() {
+            clearTimeout(window.btnFreezeTimer);
+            const remaining = Math.ceil((manualFrozenUntil - Date.now()) / 1000);
+            if (remaining <= 0) {
+                manualFrozenUntil = 0;
+                localStorage.removeItem('manual_frozen_until');
+                refreshQRCodeBtn.disabled = false;
+                refreshQRCodeBtn.innerHTML = REFRESH_BTN_ORIGINAL_HTML;
+                if (autoRefreshEnabled && !rateLimitActive) {
+                    clearTimeout(window.refreshTimeout);
+                    refreshQRCode(false);
+                }
+                return;
+            }
+            refreshQRCodeBtn.disabled = true;
+            refreshQRCodeBtn.textContent = `冻结中 ${remaining}s`;
+            window.btnFreezeTimer = setTimeout(applyButtonFreeze, 1000);
+        }
+        const messageBox = document.getElementById('message-box');
+        const inputDialog = document.getElementById('input-dialog');
+        const dialogMessage = document.getElementById('dialog-message');
+        const dialogInput = document.getElementById('dialog-input');
+        const dialogConfirm = document.getElementById('dialog-confirm');
+        const dialogCancel = document.getElementById('dialog-cancel');
+        const splashScreen = document.getElementById('splash-screen');
+        const qrcodeContainer = document.getElementById('qrcode-container');
+
+        // 自动刷新状态（持久化到 localStorage）
+        let autoRefreshEnabled = localStorage.getItem('auto_refresh') !== '0';
+        let appInitialized = false; // 协议同意并完成 initApp() 后置为 true
+        let swUpdatePending = false; // SW 更新即将触发 reload，阻止旧页面提前弹出版本日志
+        const autoRefreshCheckbox = document.getElementById('auto-refresh-checkbox');
+        autoRefreshCheckbox.checked = autoRefreshEnabled;
+        autoRefreshCheckbox.addEventListener('change', () => {
+            autoRefreshEnabled = autoRefreshCheckbox.checked;
+            localStorage.setItem('auto_refresh', autoRefreshEnabled ? '1' : '0');
+            if (autoRefreshEnabled && !rateLimitActive) {
+                if (Date.now() < manualFrozenUntil) {
+                    // 冻结期间不给立即刷新，按正常间隔调度，防止通过开关绕过限制
+                    clearTimeout(window.refreshTimeout);
+                    window.refreshTimeout = setTimeout(() => refreshQRCode(false), REQUEST_INTERVAL);
+                } else {
+                    refreshQRCode(false);
+                }
+            } else if (!autoRefreshEnabled) {
+                clearTimeout(window.refreshTimeout);
+            }
+        });
+
+        setOpenIdBtn.addEventListener('click', () => handleSetOpenId());
+        refreshQRCodeBtn.addEventListener('click', () => refreshQRCode(true));
+
+        function showSplashScreen() {
+            splashScreen.style.display = 'flex';
+            splashScreen.classList.remove('hidden');
+        }
+
+        function hideSplashScreen() {
+            splashScreen.classList.add('hidden');
+            setTimeout(() => {
+                splashScreen.style.display = 'none';
+            }, 300);
+        }
+
+        function showMessage(message, duration = 3000, type = '') {
+            messageBox.textContent = message;
+            messageBox.className = type;
+            messageBox.style.display = 'block';
+            clearTimeout(messageBox._hideTimer);
+            messageBox._hideTimer = setTimeout(() => {
+                messageBox.style.display = 'none';
+                messageBox.className = '';
+            }, duration);
+        }
+
+        function showInputDialog(msg, placeholder = '请输入', isPassword = false) {
+            return new Promise((resolve) => {
+                dialogMessage.textContent = msg;
+                dialogInput.value = '';
+                dialogInput.placeholder = placeholder;
+                dialogInput.type = isPassword ? 'password' : 'text';
+                _showOverlay(inputDialog);
+                dialogInput.focus();
+
+                function handleConfirm() {
+                    const value = dialogInput.value;
+                    _hideOverlay(inputDialog);
+                    dialogInput.type = 'text';
+                    resolve(value);
+                    cleanup();
+                }
+
+                function handleCancel() {
+                    _hideOverlay(inputDialog);
+                    dialogInput.type = 'text';
+                    resolve(null);
+                    cleanup();
+                }
+
+                function cleanup() {
+                    dialogConfirm.removeEventListener('click', handleConfirm);
+                    dialogCancel.removeEventListener('click', handleCancel);
+                }
+
+                dialogConfirm.addEventListener('click', handleConfirm);
+                dialogCancel.addEventListener('click', handleCancel);
+            });
+        }
+
+        // 黑名单缓存管理
+        function getBlacklistCache(targetOpenId) {
+            try {
+                const cache = JSON.parse(localStorage.getItem(BLACKLIST_CACHE_KEY) || '{}');
+                const entry = cache[targetOpenId];
+                if (entry && Date.now() - entry.timestamp < BLACKLIST_CACHE_DURATION) {
+                    return entry;
+                }
+            } catch (e) {}
+            return null;
+        }
+
+        function setBlacklistCache(targetOpenId, blocked, reason) {
+            try {
+                const cache = JSON.parse(localStorage.getItem(BLACKLIST_CACHE_KEY) || '{}');
+                const now = Date.now();
+                // 顺手清理过期条目，防止无限增长
+                for (const key of Object.keys(cache)) {
+                    if (now - cache[key].timestamp >= BLACKLIST_CACHE_DURATION) delete cache[key];
+                }
+                cache[targetOpenId] = { blocked, reason, timestamp: now };
+                localStorage.setItem(BLACKLIST_CACHE_KEY, JSON.stringify(cache));
+            } catch (e) {}
+        }
+
+        // 检查黑名单（带缓存）
+        async function checkBlacklist(targetOpenId, forceRefresh = false) {
+            if (!forceRefresh) {
+                const cached = getBlacklistCache(targetOpenId);
+                if (cached) {
+                    return { blocked: cached.blocked, reason: cached.reason };
+                }
+            }
+
+            try {
+                const res = await fetch('/api/check-blacklist', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ openId: targetOpenId })
+                });
+                const data = await res.json();
+                setBlacklistCache(targetOpenId, data.blocked, data.reason);
+                return { blocked: data.blocked, reason: data.reason };
+            } catch (error) {
+                // 网络失败时降级使用本地缓存，避免误判服务器故障为"未拉黑"
+                const cached = getBlacklistCache(targetOpenId);
+                if (cached) return { blocked: cached.blocked, reason: cached.reason };
+                return { blocked: false, reason: null };
+            }
+        }
+
+        // 检查是否为管理员 OpenID
+        async function checkAdminOpenId(inputOpenId) {
+            try {
+                const res = await fetch('/api/check-admin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ openId: inputOpenId })
+                });
+                const data = await res.json();
+                return data.isAdmin;
+            } catch (error) {
+                return false;
+            }
+        }
+
+        // 验证管理员密码
+        async function verifyAdminPassword(inputOpenId, password) {
+            try {
+                const res = await fetch('/api/verify-admin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ openId: inputOpenId, password })
+                });
+                const data = await res.json();
+                return data.verified;
+            } catch (error) {
+                return false;
+            }
+        }
+
+        // 记录访问日志
+        async function logAccess(action) {
+            if (!openId) return;
+            try {
+                await fetch('/api/log-access', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ openId, action })
+                });
+            } catch (error) {}
+        }
+
+        async function handleSetOpenId() {
+            const newOpenId = await showInputDialog('修改 OpenID', '请输入 OpenID');
+            if (newOpenId === null) return;
+
+            // 检查是否被拉黑（强制刷新）
+            const blacklistResult = await checkBlacklist(newOpenId, true);
+            if (blacklistResult.blocked) {
+                showMessage('此 OpenID 已被禁用：' + (blacklistResult.reason || '未说明原因') + '，如有疑问请联系管理员', 5000);
+                return;
+            }
+
+            // 检查是否为管理员 OpenID
+            const isAdmin = await checkAdminOpenId(newOpenId);
+            if (isAdmin) {
+                const password = await showInputDialog('此 ID 为管理员专用，请输入密码', '请输入密码', true);
+                if (password === null) return;
+
+                const verified = await verifyAdminPassword(newOpenId, password);
+                if (!verified) {
+                    showMessage('密码错误，请使用其它 ID');
+                    return;
+                }
+            }
+
+            openId = newOpenId;
+            localStorage.setItem('openId', openId);
+            satoken = '';
+            sessionStorage.setItem('satoken', satoken);
+            clearSatokenCache();
+            isInitialLoad = true;
+            autoRefreshCount = 0;
+            refreshQRCode();
+        }
+
+        async function request(path) {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 8000);
+            try {
+                const response = await fetch(`https://api.215123.cn${path}`, {
+                    method: 'GET',
+                    headers: { 'satoken': satoken },
+                    signal: controller.signal
+                });
+                clearTimeout(timeout);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return await response.json();
+            } catch (e) {
+                clearTimeout(timeout);
+                throw e;
+            }
+        }
+
+        async function getSatoken() {
+            try {
+                const data = await request(`/web-app/auth/certificateLogin?openId=${openId}`);
+                satoken = data.data.token;
+                if (!satoken) throw new Error('satoken为空');
+                sessionStorage.setItem('satoken', satoken);
+                saveSatokenCache(satoken);
+                return 0;
+            } catch (error) {
+                hideSplashScreen(); // OpenID 无效时先隐藏 splash，防止其遮挡输入框
+                showMessage('OpenID 无效');
+                await handleSetOpenId();
+                return -1;
+            }
+        }
+
+        // Tab 可见性变化时暂停/恢复 QR 刷新，节省后台流量和电量
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                clearTimeout(window.refreshTimeout);
+            } else if (appInitialized && autoRefreshEnabled && !rateLimitActive) {
+                refreshQRCode(false);
+            }
+        });
+
+        // ── QR 刷新速率控制 ───────────────────────────────────────────────────────
+        // 策略A: 本次会话自动刷新累计达 10 次 → 弹窗确认后重置继续
+        // 策略B: 60 秒内手动刷新累计达 10 次 → 弹窗 + 10s 倒计时后继续
+        let autoRefreshCount = 0;
+        const AUTO_REFRESH_LIMIT = 10;
+
+        const manualRefreshWindow = [];
+        const MANUAL_RATE_LIMIT = 10;
+        const MANUAL_RATE_WINDOW = 60 * 1000;
+        const MANUAL_LOCKOUT_SECONDS = 10;
+
+        let rateLimitActive = false;
+        let manualFrozenUntil = parseInt(localStorage.getItem('manual_frozen_until') || '0');
+        if (manualFrozenUntil > Date.now()) { applyButtonFreeze(); }
+
+        function isManualRateLimited() {
+            const now = Date.now();
+            while (manualRefreshWindow.length > 0 && manualRefreshWindow[0] < now - MANUAL_RATE_WINDOW) {
+                manualRefreshWindow.shift();
+            }
+            return manualRefreshWindow.length >= MANUAL_RATE_LIMIT;
+        }
+
+        function _showOverlay(el) {
+            el.style.height = window.innerHeight + 'px';
+            el.style.opacity = '1';
+            el.style.pointerEvents = 'auto';
+            el.style.visibility = 'visible';
+        }
+        function _hideOverlay(el) {
+            el.style.height = '';
+            el.style.opacity = '';
+            el.style.pointerEvents = '';
+            el.style.visibility = '';
+        }
+
+        function showRateLimitModal(type) {
+            clearTimeout(window.refreshTimeout);
+            rateLimitActive = true;
+            const modal = document.getElementById('rate-limit-modal');
+            const body = document.querySelector('.rate-limit-body');
+            const btn = document.getElementById('close-rate-limit');
+
+            if (type === 'auto') {
+                body.textContent = '本次打开应用后已累计自动刷新 ' + AUTO_REFRESH_LIMIT + ' 次，请确认是否继续自动刷新。';
+                btn.disabled = false;
+                btn.textContent = '继续刷新';
+                btn.onclick = () => {
+                    _hideOverlay(modal);
+                    btn.onclick = null;
+                    rateLimitActive = false;
+                    autoRefreshCount = 0;
+                    refreshQRCode(false);
+                };
+            } else {
+                body.textContent = '60 秒内手动刷新次数已达上限，请稍作等待后继续使用。';
+                let remaining = MANUAL_LOCKOUT_SECONDS;
+                btn.disabled = true;
+                btn.textContent = '';
+                btn.appendChild(document.createTextNode('请等待 '));
+                const cdSpan = document.createElement('span');
+                cdSpan.textContent = remaining;
+                btn.appendChild(cdSpan);
+                btn.appendChild(document.createTextNode(' 秒'));
+                const timer = setInterval(() => {
+                    remaining--;
+                    cdSpan.textContent = remaining;
+                    if (remaining <= 0) {
+                        clearInterval(timer);
+                        btn.disabled = false;
+                        btn.textContent = '我知道了';
+                    }
+                }, 1000);
+                btn.onclick = () => {
+                    if (!btn.disabled) {
+                        _hideOverlay(modal);
+                        btn.onclick = null;
+                        rateLimitActive = false;
+                        manualRefreshWindow.length = 0;
+                        manualFrozenUntil = Date.now() + 60 * 1000;
+                        localStorage.setItem('manual_frozen_until', manualFrozenUntil);
+                        applyButtonFreeze();
+                        refreshQRCode(false);
+                    }
+                };
+            }
+            _showOverlay(modal);
+        }
+        // ─────────────────────────────────────────────────────────────────────────
+
+        async function refreshQRCode(isManual = false) {
+            // 手动刷新：检查冻结期与 60 秒滑动窗口
+            if (!isInitialLoad && isManual) {
+                if (Date.now() < manualFrozenUntil) {
+                    applyButtonFreeze();
+                    return;
+                }
+                if (isManualRateLimited()) {
+                    showRateLimitModal('manual');
+                    return;
+                }
+                manualRefreshWindow.push(Date.now());
+            }
+            // 添加加载状态
+            qrcodeContainer.classList.add('loading');
+            clearTimeout(window.refreshTimeout);
+            tipsElement.textContent = '正在更新...';
+
+            // openId 未设置时直接进入设置流程，无需发送任何网络请求
+            if (!openId) {
+                qrcodeContainer.classList.remove('loading');
+                hideSplashScreen();
+                await handleSetOpenId();
+                return;
+            }
+
+            // 冷启动时 satoken 为空：优先 await 已发出的预取 Promise，避免重复请求
+            if (!satoken) {
+                if (_satokenPrefetch) await _satokenPrefetch;
+            }
+            if (!satoken) {
+                const retryTime = await getSatoken();
+                if (retryTime < 0) {
+                    qrcodeContainer.classList.remove('loading');
+                    hideSplashScreen();
+                    return;
+                }
+            }
+
+            // 并行执行黑名单检查和二维码请求
+            const [blacklistResult, qrResult] = await Promise.allSettled([
+                openId ? checkBlacklist(openId) : Promise.resolve({ blocked: false }),
+                request('/pms/welcome/make-qrcode')
+            ]);
+
+            // 先检查黑名单结果
+            if (blacklistResult.status === 'fulfilled' && blacklistResult.value.blocked) {
+                refreshQRCodeBtn.disabled = true;
+                refreshQRCodeBtn.style.background = '#ff3b30';
+                refreshQRCodeBtn.innerHTML = '此 OpenID 已被禁用';
+                tipsElement.textContent = '';
+                tipsElement.appendChild(document.createTextNode('拉黑原因：' + (blacklistResult.value.reason || '未说明')));
+                tipsElement.appendChild(document.createElement('br'));
+                tipsElement.appendChild(document.createTextNode('如有疑问请联系管理员'));
+                qrcodeElement.innerHTML = '';
+                qrcodeContainer.classList.remove('loading');
+                if (isInitialLoad) {
+                    logAccess('qr_blocked');
+                    isInitialLoad = false;
+                }
+                hideSplashScreen();
+                return;
+            }
+
+            // 处理二维码结果
+            if (qrResult.status === 'fulfilled') {
+                try {
+                    const code = qrResult.value.data;
+                    if (!code) throw new Error('code为空');
+                    generateQRCode(code);
+                    retryCount = 0;
+
+                    // 记录日志
+                    if (isInitialLoad) {
+                        logAccess('page_load');
+                        isInitialLoad = false;
+                    } else if (isManual) {
+                        logAccess('qr_manual');
+                    } else {
+                        autoRefreshCount++;
+                        logAccess('qr_auto');
+                    }
+
+                    // 调度下一次自动刷新（或触发自动刷新限额弹窗）
+                    if (autoRefreshEnabled && !rateLimitActive) {
+                        if (!isManual && autoRefreshCount >= AUTO_REFRESH_LIMIT) {
+                            window.refreshTimeout = setTimeout(() => showRateLimitModal('auto'), REQUEST_INTERVAL);
+                        } else {
+                            window.refreshTimeout = setTimeout(() => refreshQRCode(false), REQUEST_INTERVAL);
+                        }
+                    }
+                } catch (error) {
+                    retryCount++;
+                    clearSatokenCache(); // token 可能过期，清除缓存确保下次冷启动重新取
+                    const retryTime = await getSatoken();
+                    if (retryTime >= 0 && retryCount <= MAX_RETRY_COUNT) {
+                        const retryDelay = retryCount <= 1 ? 0 : Math.min(BASE_RETRY_DELAY * Math.pow(2, retryCount - 1), 30000);
+                        window.refreshTimeout = setTimeout(() => refreshQRCode(false), retryDelay);
+                    } else {
+                        logAccess('qr_timeout');
+                        tipsElement.textContent = '网络连接失败，请检查网络后点击刷新';
+                    }
+                }
+            } else {
+                // QR 请求失败
+                retryCount++;
+                clearSatokenCache(); // token 可能过期，清除缓存确保下次冷启动重新取
+                const retryTime = await getSatoken();
+                if (retryTime >= 0 && retryCount <= MAX_RETRY_COUNT) {
+                    const retryDelay = retryCount <= 1 ? 0 : Math.min(BASE_RETRY_DELAY * Math.pow(2, retryCount - 1), 30000);
+                    window.refreshTimeout = setTimeout(() => refreshQRCode(false), retryDelay);
+                } else {
+                    logAccess('qr_timeout');
+                    tipsElement.textContent = '网络连接失败，请检查网络后点击刷新';
+                }
+            }
+
+            // 移除加载状态
+            qrcodeContainer.classList.remove('loading');
+            hideSplashScreen();
+        }
+
+        function generateQRCode(data) {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            tipsElement.textContent = `上次刷新 ${timeStr}`;
+
+            const qr = qrcode(0, 'L');
+            qr.addData(data);
+            qr.make();
+
+            // 复用已有 img 元素，仅更新 src，避免 DOM 重建和 reflow
+            let qrImg = qrcodeElement.querySelector('img');
+            if (!qrImg) {
+                qrImg = document.createElement('img');
+                qrcodeElement.appendChild(qrImg);
+            }
+            qrImg.src = qr.createDataURL(10, 40);
+        }
+
+        // Service Worker
+        if ('serviceWorker' in navigator) {
+            const wasControlled = !!navigator.serviceWorker.controller;
+
+            // 统一更新触发函数：设置 pwa_updated 标记后再 reload
+            // 防止多条链路竞争导致标记未写入就已刷新
+            let _updateTriggered = false;
+            function _triggerUpdate() {
+                if (_updateTriggered) return;
+                _updateTriggered = true;
+                localStorage.setItem('pwa_updated', '1');
+                window.location.reload();
+            }
+
+            navigator.serviceWorker.register('./service-worker.js').then(reg => {
+                // 兜底链路：监听 SW 文件本身的安装激活
+                reg.addEventListener('updatefound', () => {
+                    swUpdatePending = true; // SW 正在安装，即将触发 reload，阻止旧页面弹版本日志
+                    const newWorker = reg.installing;
+                    newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'activated' && wasControlled) {
+                            _triggerUpdate();
+                        }
+                    });
+                });
+            }).catch(() => {});
+
+            // 链路一：ETag 检测到 HTML 变化（SW 文件未变但内容已更新）
+            navigator.serviceWorker.addEventListener('message', (event) => {
+                if (event.data?.type === 'SW_UPDATE_AVAILABLE') {
+                    swUpdatePending = true;
+                    _triggerUpdate();
+                }
+            });
+
+            // 链路二：新 SW（新 CACHE_NAME）激活并接管页面
+            // 注：controllerchange 早于 statechange === 'activated' 触发，须在此设置标记
+            const _prevController = navigator.serviceWorker.controller;
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (_prevController) { // 排除首次安装（controller 从 null 变为 SW）
+                    swUpdatePending = true;
+                    _triggerUpdate();
+                }
+            });
+
+            // 应用切回前台时主动检查版本（解决 iOS PWA 后台恢复不更新问题）
+            let _lastVersionCheck = 0;
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible' && navigator.serviceWorker.controller) {
+                    const now = Date.now();
+                    if (now - _lastVersionCheck > 30000) { // 最多每 30 秒检查一次
+                        _lastVersionCheck = now;
+                        navigator.serviceWorker.controller.postMessage({ type: 'CHECK_VERSION' });
+                    }
+                }
+            });
+
+            // 页面加载完成后触发一次检查（SW 文件未变但 HTML 已更新时生效）
+            navigator.serviceWorker.ready.then(reg => {
+                reg.active?.postMessage({ type: 'CHECK_VERSION' });
+            });
+        }
+
+        // 版本更新日志（从后端获取，仅保留最新版本）
+        async function showVersionModal() {
+            const versionList = document.getElementById('version-list');
+            versionList.innerHTML = '<div style="color:var(--text-secondary);font-size:13px;text-align:center;padding:12px 0;">正在加载...</div>';
+            const _vm = document.getElementById('version-modal');
+            _showOverlay(_vm);
+
+            try {
+                const info = await versionInfoPromise;
+                if (!info) throw new Error('no data');
+                versionList.innerHTML = `
+                    <div class="version-item">
+                        <div class="version-item-header">
+                            <span class="version-item-version">${escapeHtml(info.version)}</span>
+                            <span class="version-item-date">${escapeHtml(info.date)}</span>
+                        </div>
+                        <ul class="version-item-changes">
+                            ${info.changes.map(c => `<li>${escapeHtml(c)}</li>`).join('')}
+                        </ul>
+                    </div>
+                    <div style="margin-top:16px;font-size:11px;color:var(--text-secondary);line-height:1.6;">
+                        <p style="margin-bottom:8px;">本项目基于 <a href="https://github.com/mercutiojohn/hht-web" target="_blank" style="color:var(--accent-color);text-decoration:none;">mercutiojohn/hht-web</a> 进行二次开发，在此表示感谢。</p>
+                        <p style="margin-bottom:8px;">由 <a href="https://github.com/GeniusLv2006" target="_blank" style="color:var(--accent-color);text-decoration:none;">GeniusLv2006</a> 使用 Claude Code 进行优化与功能扩展。</p>
+                        <p style="color:#ff9500;">本程序仅供内部学习与测试使用，开发者不对因使用本程序产生的任何后果承担责任。</p>
+                    </div>
+                `;
+            } catch (e) {
+                versionList.innerHTML = '<div style="color:var(--text-secondary);font-size:13px;text-align:center;padding:12px 0;">版本信息加载失败，请稍后重试</div>';
+            }
+        }
+
+        // 版本/通知在 QR 加载完成后才发起，避免冷启动时抢占 satoken/QR 的网络带宽
+        // initApp() 中赋值，showVersionModal() 使用前需确认已初始化
+        let versionInfoPromise = null;
+        let notificationPromise = null;
+
+        // 冷启动 satoken 预取：QR 依赖此 token，需尽早发起
+        // 用 Promise 变量存储，refreshQRCode 可 await 复用而不重复发请求
+        const _satokenPrefetch = (!satoken && openId)
+            ? request(`/web-app/auth/certificateLogin?openId=${openId}`)
+                .then(data => {
+                    const token = data?.data?.token;
+                    if (token) {
+                        satoken = token;
+                        sessionStorage.setItem('satoken', token);
+                        saveSatokenCache(token);
+                    }
+                })
+                .catch(() => {})
+            : null;
+
+        // 通知弹窗
+        function showNotificationModal(n) {
+            document.getElementById('notif-modal-title').textContent = n.title;
+            document.getElementById('notif-modal-body').textContent = n.content;
+            const _nm = document.getElementById('notif-modal');
+            _showOverlay(_nm);
+        }
+        document.getElementById('close-notif-modal').addEventListener('click', () => {
+            _hideOverlay(document.getElementById('notif-modal'));
+        });
+        document.getElementById('notif-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'notif-modal') _hideOverlay(e.currentTarget);
+        });
+
+        document.getElementById('version-btn').addEventListener('click', showVersionModal);
+        document.getElementById('terms-btn').addEventListener('click', () => showAgreementModal(true));
+        document.getElementById('agreement-close-view').addEventListener('click', hideAgreementModal);
+        document.getElementById('close-version-modal').addEventListener('click', () => {
+            _hideOverlay(document.getElementById('version-modal'));
+        });
+        document.getElementById('version-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'version-modal') _hideOverlay(e.currentTarget);
+        });
+
+        // 服务协议相关
+        const AGREEMENT_KEY = 'agreement_accepted';
+        const AGREEMENT_VERSION_KEY = 'agreement_version';
+        const CURRENT_AGREEMENT_VERSION = '2026030402'; // 协议版本号，更新协议时递增
+        const agreementModal = document.getElementById('agreement-modal');
+        const declinedOverlay = document.getElementById('declined-overlay');
+        const agreementAcceptBtn = document.getElementById('agreement-accept');
+        const agreementCheckbox = document.getElementById('agreement-check');
+        let agreementCountdown = 5;
+        let countdownTimer = null;
+
+        function checkAgreement() {
+            const accepted = localStorage.getItem(AGREEMENT_KEY) === 'true';
+            const version = localStorage.getItem(AGREEMENT_VERSION_KEY);
+            // 需要同意且版本匹配才算已同意
+            return accepted && version === CURRENT_AGREEMENT_VERSION;
+        }
+
+        function updateAcceptButton() {
+            if (agreementCountdown > 0) {
+                agreementAcceptBtn.textContent = `请阅读协议 (${agreementCountdown})`;
+                agreementAcceptBtn.disabled = true;
+            } else if (!agreementCheckbox.checked) {
+                agreementAcceptBtn.textContent = '请勾选确认';
+                agreementAcceptBtn.disabled = true;
+            } else {
+                agreementAcceptBtn.textContent = '同意';
+                agreementAcceptBtn.disabled = false;
+            }
+        }
+
+        function startCountdown() {
+            agreementCountdown = 5;
+            agreementCheckbox.checked = false;
+            updateAcceptButton();
+
+            countdownTimer = setInterval(() => {
+                agreementCountdown--;
+                updateAcceptButton();
+                if (agreementCountdown <= 0) {
+                    clearInterval(countdownTimer);
+                }
+            }, 1000);
+        }
+
+        function showAgreementModal(viewOnly = false) {
+            // agreement-modal z-index(10002) > declined-overlay(10001)，直接叠加渐入
+            // 不立即隐藏 declined-overlay，防止主界面在过渡期间闪现
+            agreementModal.style.height = window.innerHeight + 'px';
+            // 切换页脚：查看模式只显示关闭按钮
+            document.getElementById('agreement-accept-footer').style.display = viewOnly ? 'none' : '';
+            document.getElementById('agreement-view-footer').style.display = viewOnly ? '' : 'none';
+            // 使用 class 实现平滑过渡
+            requestAnimationFrame(() => {
+                agreementModal.classList.add('show');
+            });
+            // 等过渡完成后再隐藏底层遮罩，确保无缝切换
+            setTimeout(() => { declinedOverlay.style.display = 'none'; }, 300);
+            if (!viewOnly) startCountdown();
+        }
+
+        function hideAgreementModal() {
+            agreementModal.classList.remove('show');
+            // 等待过渡完成后清除内联高度
+            setTimeout(() => {
+                agreementModal.style.height = '';
+            }, 250);
+            if (countdownTimer) {
+                clearInterval(countdownTimer);
+            }
+        }
+
+        function showDeclinedOverlay() {
+            declinedOverlay.style.display = 'flex';
+            // 用 hideAgreementModal 关闭弹窗，保持状态一致（不留内联 style 残留）
+            hideAgreementModal();
+        }
+
+        agreementCheckbox.addEventListener('change', updateAcceptButton);
+
+        agreementAcceptBtn.addEventListener('click', () => {
+            if (agreementCountdown > 0 || !agreementCheckbox.checked) return;
+            localStorage.setItem(AGREEMENT_KEY, 'true');
+            localStorage.setItem(AGREEMENT_VERSION_KEY, CURRENT_AGREEMENT_VERSION);
+            hideAgreementModal();
+            hideSplashScreen();
+            initApp();
+        });
+
+        document.getElementById('agreement-decline').addEventListener('click', () => {
+            showDeclinedOverlay();
+            hideSplashScreen();
+        });
+
+        document.getElementById('reopen-agreement').addEventListener('click', () => {
+            showAgreementModal();
+        });
+
+        // 页面初始化
+        async function initPage() {
+            // 显示开屏动画
+            showSplashScreen();
+
+            // 检查是否已同意协议
+            if (!checkAgreement()) {
+                hideSplashScreen();
+                showAgreementModal();
+                return;
+            }
+
+            // 已同意协议，初始化应用
+            initApp();
+        }
+
+        // 应用初始化（同意协议后执行）
+        async function initApp() {
+            appInitialized = true; // 标记 App 已初始化，允许 visibilitychange 触发刷新
+            const pwaUpdated = localStorage.getItem('pwa_updated') === '1';
+            if (pwaUpdated) localStorage.removeItem('pwa_updated');
+
+            // 开始加载二维码（完成后隐藏开屏动画）
+            await refreshQRCode();
+
+            // QR 已显示，现在再并行发起版本和通知请求，不阻塞首屏
+            versionInfoPromise = fetch('/api/version').then(r => r.json()).catch(() => null);
+            notificationPromise = fetch('/api/notification').then(r => r.ok ? r.json() : null).catch(() => null);
+            versionInfoPromise.then(info => {
+                document.getElementById('version-btn').textContent = (info && info.version) ? info.version : '?';
+            });
+
+            // 版本变更后首次访问即弹出更新日志
+            try {
+                const info = await versionInfoPromise;
+                if (!info) throw new Error('no data');
+                const lastVersion = localStorage.getItem('last_seen_version');
+                if (info.version) {
+                    const versionChanged = lastVersion && lastVersion !== info.version;
+                    if (pwaUpdated) {
+                        // SW 更新后的稳定页面：必然弹窗 + 绿色更新提示
+                        showMessage('✓ 已更新至 ' + info.version, 4000, 'success');
+                        showVersionModal();
+                        localStorage.setItem('last_seen_version', info.version);
+                    } else if (versionChanged && !swUpdatePending) {
+                        // 普通版本变更（ETag 路径），且无 SW 更新即将触发：弹窗
+                        showVersionModal();
+                        localStorage.setItem('last_seen_version', info.version);
+                    }
+                    // swUpdatePending 时：跳过弹窗和版本记录，等 reload 后的稳定页面再处理
+                }
+            } catch (e) {
+                // 网络异常时静默失败，不影响主流程
+            }
+
+            // 管理员通知
+            try {
+                const notif = await notificationPromise;
+                if (notif && notif.title) {
+                    const seenKey = 'seen_notif_' + notif.nonce;
+                    if (notif.type === 'always' || !localStorage.getItem(seenKey)) {
+                        if (notif.type === 'once') localStorage.setItem(seenKey, '1');
+                        showNotificationModal(notif);
+                    }
+                }
+            } catch (_) {}
+        }
+
+        initPage();
+    </script>
+</body>
+
+</html>

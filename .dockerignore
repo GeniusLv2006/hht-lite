@@ -1,0 +1,6 @@
+data/
+public/
+admin/
+node_modules/
+.git/
+*.md

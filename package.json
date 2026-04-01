@@ -1,0 +1,19 @@
+{
+  "name": "hht-backend",
+  "version": "1.0.0",
+  "description": "慧湖通极速版后端服务",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "sync-version": "node scripts/sync-version.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^9.4.3",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.2",
+    "compression": "^1.7.4",
+    "express-rate-limit": "^7.1.5"
+  }
+}

@@ -1,0 +1,14 @@
+# 依赖
+node_modules/
+
+# 数据库和密钥（只在 VPS 上存在，不入库）
+data/
+
+# Claude Code 工作文件
+.claude/
+
+# macOS
+.DS_Store
+
+# VS Code
+.vscode/

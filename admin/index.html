@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>慧湖通管理后台</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;600&display=swap" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;600&display=swap"></noscript>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', 'Noto Sans SC', -apple-system, sans-serif;
+      background: #f5f5f7;
+      min-height: 100vh;
+      color: #1d1d1f;
+      -webkit-font-smoothing: antialiased;
+    }
+    .login-container { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+    .has-token .login-container { display: none !important; }
+    .has-token .dashboard { display: block !important; }
+    .login-box { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); width: 100%; max-width: 360px; }
+    .login-box h1 { font-size: 24px; margin-bottom: 30px; text-align: center; }
+    .form-group { margin-bottom: 20px; }
+    .form-group label { display: block; margin-bottom: 8px; font-weight: 500; color: #666; font-size: 14px; }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%; padding: 14px 16px; border: 1px solid #e0e0e0; border-radius: 12px;
+      font-size: 16px; font-family: inherit; transition: border-color 0.2s;
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: #007aff; }
+    .readonly-input { background: #f5f5f5; font-size: 12px; }
+    .btn {
+      padding: 14px 20px; background: linear-gradient(135deg, #007aff 0%, #5856d6 100%); color: white;
+      border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer;
+      font-family: inherit; transition: transform 0.2s; box-shadow: 0 4px 15px rgba(0, 122, 255, 0.35);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+    .btn-danger { background: linear-gradient(135deg, #ff3b30 0%, #ff6b6b 100%); box-shadow: 0 4px 15px rgba(255, 59, 48, 0.35); }
+    .btn-small { padding: 8px 14px; font-size: 13px; border-radius: 8px; }
+    .btn-outline { background: white; color: #007aff; border: 1px solid #007aff; box-shadow: none; }
+    .error-msg { color: #ff3b30; font-size: 14px; margin-top: 15px; text-align: center; display: none; }
+    .dashboard { display: none; }
+    .header { background: white; padding: 16px 24px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+    .header h1 { font-size: 20px; }
+    .header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .btn-secondary { padding: 10px 16px; background: #f0f0f0; color: #333; border: none; border-radius: 10px; font-size: 14px; font-weight: 500; cursor: pointer; font-family: inherit; }
+    .btn-secondary:hover { background: #e0e0e0; }
+    .content { padding: 20px; max-width: 1400px; margin: 0 auto; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 12px; margin-bottom: 20px; }
+    .stat-card { background: white; padding: 16px; border-radius: 14px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+    .stat-card .value { font-size: 24px; font-weight: 600; color: #007aff; }
+    .stat-card .value.danger { color: #ff3b30; }
+    .stat-card .label { color: #666; margin-top: 4px; font-size: 12px; }
+    .stat-card[onclick]:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,0,0,0.1); transition: all 0.2s; }
+    .card { background: white; border-radius: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); overflow: hidden; margin-bottom: 20px; }
+    .card-header { padding: 16px; border-bottom: 1px solid #f0f0f0; }
+    .card-header h2 { font-size: 17px; margin-bottom: 12px; }
+    .filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .filter-input { padding: 10px 14px; border: 1px solid #e0e0e0; border-radius: 10px; font-size: 14px; font-family: inherit; min-width: 0; }
+    .filter-input:focus { outline: none; border-color: #007aff; }
+    .filter-select { padding: 10px 14px; border: 1px solid #e0e0e0; border-radius: 10px; font-size: 14px; font-family: inherit; background: white; min-width: 0; }
+    .filter-select:focus { outline: none; border-color: #007aff; }
+    .filter-input[type="date"] { width: 130px; flex: 0 0 auto; }
+    .filter-btn { padding: 10px 16px; background: #007aff; color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: 500; cursor: pointer; font-family: inherit; }
+    .filter-btn.reset { background: #f0f0f0; color: #333; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+    th { font-weight: 600; color: #666; text-transform: uppercase; letter-spacing: 0.5px; background: #fafafa; font-size: 11px; }
+    .openid-cell { font-family: 'SF Mono', Monaco, monospace; font-size: 11px; color: #333; word-break: break-all; line-height: 1.4; }
+    .tag-badge { padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 500; background: #fce4ec; color: #c2185b; margin-top: 4px; display: inline-block; }
+    .blocked-badge { background: #ffebee; color: #c62828; }
+    .action-badge { padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 500; white-space: nowrap; }
+    .action-badge.refresh { background: #e3f2fd; color: #1976d2; }
+    .action-badge.verify { background: #fff3e0; color: #f57c00; }
+    .action-badge.success { background: #e8f5e9; color: #388e3c; }
+    .action-badge.load { background: #f3e5f5; color: #7b1fa2; }
+    .action-badge.manual { background: #e3f2fd; color: #1565c0; }
+    .action-badge.auto { background: #e0f7fa; color: #00838f; }
+    .action-badge.timeout { background: #fff8e1; color: #ff8f00; }
+    .action-badge.blocked { background: #ffebee; color: #c62828; }
+    .device-info { font-size: 11px; line-height: 1.5; }
+    .device-main { color: #333; font-weight: 500; }
+    .device-detail { color: #888; font-size: 10px; }
+    .device-badge { padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 500; background: #f0f0f0; color: #666; display: inline-block; margin-right: 4px; margin-bottom: 2px; }
+    .device-badge.ios { background: #e3f2fd; color: #1976d2; }
+    .device-badge.android { background: #e8f5e9; color: #388e3c; }
+    .device-badge.mac { background: #f3e5f5; color: #7b1fa2; }
+    .device-badge.windows { background: #fff3e0; color: #f57c00; }
+    .device-badge.wechat { background: #e8f5e9; color: #07c160; }
+    .ip-cell { font-family: 'SF Mono', Monaco, monospace; font-size: 11px; color: #666; word-break: break-all; }
+    .actions-cell { white-space: nowrap; }
+    .actions-cell button { margin-right: 4px; padding: 4px 8px; font-size: 11px; border-radius: 6px; cursor: pointer; border: none; font-family: inherit; }
+    .actions-cell .btn-tag { background: #e3f2fd; color: #1976d2; }
+    .actions-cell .btn-block { background: #ffebee; color: #c62828; }
+    .actions-cell .btn-unblock { background: #e8f5e9; color: #388e3c; }
+    .actions-cell .btn-delete { background: #fff3e0; color: #e65100; }
+
+    /* 分页区域 */
+    .pagination-wrapper { padding: 16px; border-top: 1px solid #f0f0f0; }
+    .pagination-nav { display: flex; justify-content: center; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+    .pagination-nav button { padding: 8px 14px; border: 1px solid #e0e0e0; background: white; border-radius: 8px; cursor: pointer; font-family: inherit; font-size: 14px; }
+    .pagination-nav button:hover:not(:disabled) { background: #f0f0f0; }
+    .pagination-nav button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .pagination-nav .current { background: #007aff; color: white; border-color: #007aff; }
+    .pagination-jump { display: flex; justify-content: center; align-items: center; gap: 8px; padding: 12px; background: #f9f9f9; border-radius: 10px; }
+    .pagination-jump label { font-size: 14px; color: #666; }
+    .pagination-jump input { width: 70px; padding: 10px 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 14px; text-align: center; font-family: inherit; }
+    .pagination-jump input:focus { outline: none; border-color: #007aff; }
+    .pagination-jump button { padding: 10px 16px; background: #007aff; color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; font-family: inherit; }
+    .pagination-jump .page-info { font-size: 13px; color: #888; }
+
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
+    .modal-content { background: white; padding: 24px; border-radius: 20px; width: 100%; max-width: 420px; max-height: 90vh; overflow-y: auto; }
+    .modal-content h2 { margin-bottom: 20px; font-size: 18px; }
+    .modal-actions { display: flex; gap: 12px; margin-top: 20px; }
+    .modal-actions button { flex: 1; }
+    .list-item { padding: 14px 16px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    .list-item:last-child { border-bottom: none; }
+    .list-item-info { flex: 1; min-width: 0; }
+    .list-item-title { font-family: 'SF Mono', Monaco, monospace; font-size: 11px; color: #333; word-break: break-all; }
+    .list-item-subtitle { font-size: 12px; color: #888; margin-top: 4px; }
+    .empty-state { padding: 40px; text-align: center; color: #888; }
+    .note { font-size: 11px; color: #999; margin-top: 8px; font-style: italic; }
+
+    /* 移动端卡片视图 */
+    .log-cards { display: none; }
+    .log-card { background: white; border-radius: 12px; padding: 14px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+    .log-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+    .log-card-time { font-size: 12px; color: #888; }
+    .log-card-openid { font-family: 'SF Mono', Monaco, monospace; font-size: 11px; color: #333; word-break: break-all; margin-bottom: 8px; line-height: 1.4; }
+    .log-card-row { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding-top: 8px; border-top: 1px solid #f0f0f0; }
+    .log-card-actions { display: flex; gap: 8px; }
+    .log-card-ip { font-family: 'SF Mono', Monaco, monospace; font-size: 10px; color: #888; margin-top: 6px; }
+
+    /* 移动端响应式 */
+    @media (max-width: 768px) {
+      .header { padding: 12px 16px; }
+      .header h1 { font-size: 18px; width: 100%; text-align: center; order: -1; }
+      .header-actions { width: 100%; justify-content: center; }
+      .btn-secondary { padding: 8px 12px; font-size: 13px; }
+      .content { padding: 12px; }
+      .stats-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+      .stat-card { padding: 12px; }
+      .stat-card .value { font-size: 20px; }
+      .stat-card .label { font-size: 11px; }
+      .card-header { padding: 12px; }
+      .card-header h2 { font-size: 16px; }
+      .filters { gap: 6px; flex-wrap: wrap; }
+      .filter-input, .filter-select { padding: 8px 10px; font-size: 13px; flex: 1; min-width: 80px; }
+      .filter-input[type="date"] { min-width: 110px; flex: 0 0 auto; }
+      .filter-btn { padding: 8px 12px; font-size: 13px; }
+      .table-wrapper { display: none; }
+      .log-cards { display: block; padding: 12px; }
+      .modal-content { padding: 20px; }
+      .pagination-nav button { padding: 10px 12px; font-size: 13px; }
+      .pagination-jump { flex-direction: column; gap: 10px; }
+      .pagination-jump > div { display: flex; align-items: center; gap: 8px; }
+    }
+
+    @media (max-width: 480px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .header-actions { gap: 6px; }
+      .btn-secondary { padding: 8px 10px; font-size: 12px; }
+    }
+    /* 深色模式 */
+    body.dark-mode { background: #1c1c1e; color: #f5f5f7; }
+    body.dark-mode .login-box, body.dark-mode .card, body.dark-mode .stat-card, body.dark-mode .modal-content { background: #2c2c2e; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+    body.dark-mode .login-box h1, body.dark-mode .header h1, body.dark-mode .card-header h2 { color: #f5f5f7; }
+    body.dark-mode .form-group label { color: #a1a1a6; }
+    body.dark-mode .modal-content h2 { color: #f5f5f7; }
+    body.dark-mode #notifAdminStatus { color: #a1a1a6; }
+    body.dark-mode .form-group input, body.dark-mode .form-group select, body.dark-mode .form-group textarea, body.dark-mode .filter-input, body.dark-mode .filter-select { background: #3a3a3c; border-color: #48484a; color: #f5f5f7; }
+    body.dark-mode .readonly-input { background: #2c2c2e; color: #f5f5f7; }
+    body.dark-mode .form-group input:focus, body.dark-mode .form-group select:focus, body.dark-mode .filter-input:focus, body.dark-mode .filter-select:focus { border-color: #0a84ff; }
+    body.dark-mode .form-group textarea:focus { border-color: #0a84ff; }
+    body.dark-mode #notificationModal textarea { background: #3a3a3c; border-color: #48484a; color: #f5f5f7; }
+    body.dark-mode .header { background: #2c2c2e; box-shadow: 0 2px 10px rgba(0,0,0,0.3); }
+    body.dark-mode .btn-secondary { background: #3a3a3c; color: #f5f5f7; }
+    body.dark-mode .btn-secondary:hover { background: #48484a; }
+    body.dark-mode .filter-btn.reset { background: #3a3a3c; color: #f5f5f7; }
+    body.dark-mode .stat-card .label { color: #a1a1a6; }
+    body.dark-mode .stat-card .value { color: #0a84ff; }
+    body.dark-mode .stat-card .value.danger { color: #ff453a; }
+    body.dark-mode .card-header { border-bottom-color: #3a3a3c; }
+    body.dark-mode table th { background: #3a3a3c; color: #a1a1a6; border-bottom-color: #3a3a3c; }
+    body.dark-mode table td { border-bottom-color: #3a3a3c; }
+    body.dark-mode .openid-cell, body.dark-mode .device-main { color: #f5f5f7; }
+    body.dark-mode .ip-cell, body.dark-mode .device-detail, body.dark-mode .log-card-time, body.dark-mode .log-card-ip { color: #a1a1a6; }
+    body.dark-mode .tag-badge { background: #4a1a2c; color: #f48fb1; }
+    body.dark-mode .blocked-badge { background: #3a1f1f; color: #ff453a; }
+    body.dark-mode .action-badge.refresh { background: #1c3a5e; color: #64d2ff; }
+    body.dark-mode .action-badge.verify { background: #3d2f1a; color: #ffd60a; }
+    body.dark-mode .action-badge.success { background: #1e4620; color: #30d158; }
+    body.dark-mode .action-badge.load { background: #3a2a4a; color: #bf5af2; }
+    body.dark-mode .action-badge.manual { background: #1c3a5e; color: #64d2ff; }
+    body.dark-mode .action-badge.auto { background: #1a3a3a; color: #5ac8d8; }
+    body.dark-mode .action-badge.timeout { background: #3d2f1a; color: #ff9f0a; }
+    body.dark-mode .action-badge.blocked { background: #3a1f1f; color: #ff453a; }
+    body.dark-mode .device-badge { background: #3a3a3c; color: #a1a1a6; }
+    body.dark-mode .device-badge.ios { background: #1c3a5e; color: #64d2ff; }
+    body.dark-mode .device-badge.android { background: #1e4620; color: #30d158; }
+    body.dark-mode .device-badge.mac { background: #3a2a4a; color: #bf5af2; }
+    body.dark-mode .device-badge.windows { background: #3d2f1a; color: #ff9f0a; }
+    body.dark-mode .device-badge.wechat { background: #1e4620; color: #30d158; }
+    body.dark-mode .log-card { background: #2c2c2e; box-shadow: 0 1px 4px rgba(0,0,0,0.2); }
+    body.dark-mode .log-card-row { border-top-color: #3a3a3c; }
+    body.dark-mode .log-card-openid { color: #f5f5f7; }
+    body.dark-mode .pagination-nav button { background: #3a3a3c; border-color: #48484a; color: #f5f5f7; }
+    body.dark-mode .pagination-nav button:hover:not(:disabled) { background: #48484a; }
+    body.dark-mode .pagination-nav .current { background: #0a84ff; border-color: #0a84ff; }
+    body.dark-mode .pagination-jump { background: #3a3a3c; }
+    body.dark-mode .pagination-jump label, body.dark-mode .pagination-jump .page-info { color: #a1a1a6; }
+    body.dark-mode .pagination-jump input { background: #2c2c2e; border-color: #48484a; color: #f5f5f7; }
+    body.dark-mode .pagination-wrapper { border-top-color: #3a3a3c; }
+    body.dark-mode .list-item { border-bottom-color: #3a3a3c; }
+    body.dark-mode .list-item-title { color: #f5f5f7; }
+    body.dark-mode .list-item-subtitle { color: #a1a1a6; }
+    body.dark-mode .note { color: #6e6e73; }
+    body.dark-mode .actions-cell .btn-tag { background: #1c3a5e; color: #64d2ff; }
+    body.dark-mode .actions-cell .btn-block { background: #3a1f1f; color: #ff453a; }
+    body.dark-mode .actions-cell .btn-unblock { background: #1e4620; color: #30d158; }
+    body.dark-mode .actions-cell .btn-delete { background: #3d2a1a; color: #ff9f0a; }
+    body.dark-mode .modal { background: rgba(0,0,0,0.7); }
+    body.dark-mode .error-msg { color: #ff453a; }
+  </style>
+  <!-- 防止已登录时刷新页面闪过登录页 -->
+  <script>
+  (function() {
+    function getCookie(n) {
+      const m = document.cookie.split(';').find(c => c.trim().startsWith(n + '='));
+      return m ? m.split('=').slice(1).join('=').trim() : null;
+    }
+    if (getCookie('adminLoggedIn')) document.documentElement.classList.add('has-token');
+  })();
+</script>
+</head>
+<body>
+  <div class="login-container" id="loginPage">
+    <div class="login-box">
+      <h1>管理后台</h1>
+      <form id="loginForm">
+        <div class="form-group"><label>用户名</label><input type="text" id="username" required autocomplete="username"></div>
+        <div class="form-group"><label>密码</label><input type="password" id="password" required autocomplete="current-password"></div>
+        <button type="submit" class="btn" style="width:100%">登录</button>
+        <div class="error-msg" id="loginError"></div>
+      </form>
+    </div>
+  </div>
+
+  <div class="dashboard" id="dashboard">
+    <div class="header">
+      <h1>慧湖通管理后台</h1>
+      <button class="btn-secondary" id="darkModeToggle" onclick="toggleDarkMode()" style="margin-left:auto;margin-right:16px;">🌙 深色</button>
+      <div class="header-actions">
+        <button class="btn-secondary" onclick="refreshData()" style="background:#007aff;color:white;">🔄 刷新</button><button class="btn-secondary" onclick="showNotificationModal()">通知</button><button class="btn-secondary" onclick="showBlacklistModal()">黑名单</button>
+        <button class="btn-secondary" onclick="showClearLogsModal()">清理</button>
+        <button class="btn-secondary" onclick="showChangePasswordModal()">密码</button>
+        <button class="btn-secondary" onclick="logout()">退出</button>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="stats-grid">
+        <div class="stat-card"><div class="value" id="statTotal">-</div><div class="label">总访问</div></div>
+        <div class="stat-card" style="cursor:pointer;" onclick="showUsersModal()"><div class="value" id="statUnique">-</div><div class="label">用户数 ▶</div></div>
+        <div class="stat-card"><div class="value" id="statToday">-</div><div class="label">今日</div></div>
+        <div class="stat-card" style="cursor:pointer;" onclick="showBlacklistModal()"><div class="value danger" id="statBlocked">-</div><div class="label">已拉黑 ▶</div></div>
+        <div class="stat-card"><div class="value" id="statRetention">-</div><div class="label">保留</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2>访问记录</h2>
+          <div class="filters">
+            <input type="text" class="filter-input" placeholder="OpenID" id="filterOpenId" style="flex:2;">
+            <select class="filter-select" id="filterAction">
+              <option value="">全部操作</option>
+              <option value="page_load">页面加载</option>
+              <option value="qr_manual">手动刷新</option>
+              <option value="qr_auto">自动刷新</option>
+              <option value="qr_timeout">生成超时</option>
+              <option value="qr_blocked">已被拉黑</option>
+              <option value="admin_verify">管理员验证</option>
+            </select>
+            <select class="filter-select" id="filterDevice">
+              <option value="">全部设备</option>
+              <option value="iphone">iPhone</option>
+              <option value="ipad">iPad</option>
+              <option value="android">Android</option>
+              <option value="mac">Mac</option>
+              <option value="windows">Windows</option>
+              <option value="wechat">微信</option>
+            </select>
+            <input type="date" class="filter-input" id="filterStartDate"><input type="date" class="filter-input" id="filterEndDate"><button class="filter-btn" onclick="applyFilters()">筛选</button>
+            <button class="filter-btn reset" onclick="resetFilters()">重置</button>
+          </div>
+          <div class="note">* 设备版本号可能因浏览器隐私保护机制而显示不准确（Chrome 会冻结版本号）</div>
+        </div>
+
+        <!-- 桌面端表格 -->
+        <div class="table-wrapper" style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr><th style="width:120px;">时间</th><th style="width:180px;">OpenID</th><th style="width:80px;">操作</th><th style="width:140px;">设备</th><th style="width:170px;">IP</th><th style="width:80px;">管理</th></tr>
+            </thead>
+            <tbody id="logsTable"></tbody>
+          </table>
+        </div>
+
+        <!-- 移动端卡片 -->
+        <div class="log-cards" id="logCards"></div>
+
+        <!-- 分页区域 -->
+        <div class="pagination-wrapper">
+          <div class="pagination-nav" id="paginationNav"></div>
+          <div class="pagination-jump">
+            <div>
+              <label>跳转到</label>
+              <input type="number" id="jumpPageInput" min="1" value="1">
+              <label>页</label>
+              <button onclick="jumpToPage()">跳转</button>
+            </div>
+            <span class="page-info" id="pageInfo">第 1 页，共 1 页，共 0 条记录</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Change Password Modal -->
+  <div class="modal" id="changePasswordModal">
+    <div class="modal-content">
+      <h2>修改密码</h2>
+      <form id="changePasswordForm">
+        <div class="form-group"><label>当前密码</label><input type="password" id="oldPassword" required></div>
+        <div class="form-group"><label>新密码</label><input type="password" id="newPassword" required minlength="6"></div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-outline" onclick="hideModal('changePasswordModal')">取消</button>
+          <button type="submit" class="btn">确认</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Clear Logs Modal -->
+  <div class="modal" id="clearLogsModal">
+    <div class="modal-content">
+      <h2>清理日志</h2>
+      <form id="clearLogsForm">
+        <div class="form-group"><label>自动清理保留天数</label>
+          <select id="retentionDays"><option value="7">7 天</option><option value="14">14 天</option><option value="30" selected>30 天</option><option value="60">60 天</option><option value="90">90 天</option></select>
+        </div>
+        <div class="form-group"><label>手动清理</label>
+          <select id="clearDays"><option value="7">清除 7 天前</option><option value="14">清除 14 天前</option><option value="30">清除 30 天前</option><option value="all">清除全部</option></select>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-outline" onclick="hideModal('clearLogsModal')">取消</button>
+          <button type="button" class="btn" onclick="saveRetention()">保存</button>
+          <button type="button" class="btn btn-danger" onclick="clearLogs()">清理</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Tag Modal -->
+  <div class="modal" id="tagModal">
+    <div class="modal-content">
+      <h2>设置标签</h2>
+      <form id="tagForm">
+        <div class="form-group"><label>OpenID</label><input type="text" id="tagOpenId" readonly class="readonly-input"></div>
+        <div class="form-group"><label>备注标签</label><input type="text" id="tagValue" placeholder="输入备注（留空删除）" maxlength="50"></div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-outline" onclick="hideModal('tagModal')">取消</button>
+          <button type="submit" class="btn">保存</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Block Modal -->
+  <div class="modal" id="blockModal">
+    <div class="modal-content">
+      <h2>拉黑用户</h2>
+      <form id="blockForm">
+        <div class="form-group"><label>OpenID</label><input type="text" id="blockOpenId" readonly class="readonly-input"></div>
+        <div class="form-group"><label>拉黑原因（可选）</label><textarea id="blockReason" rows="3" placeholder="输入拉黑原因"></textarea></div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-outline" onclick="hideModal('blockModal')">取消</button>
+          <button type="submit" class="btn btn-danger">确认拉黑</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Blacklist Modal -->
+  <!-- Users Modal -->
+  <div class="modal" id="usersModal">
+    <div class="modal-content" style="max-width:600px;">
+      <h2>所有用户 (<span id="usersCount">0</span>)</h2>
+      <div id="usersList" style="max-height:400px;overflow-y:auto;"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn" onclick="hideModal('usersModal')">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="blacklistModal">
+    <div class="modal-content">
+      <h2>黑名单管理</h2>
+      <div id="blacklistContent"></div>
+      <div class="modal-actions" style="margin-top:16px;">
+        <button type="button" class="btn btn-outline" onclick="hideModal('blacklistModal')" style="width:100%">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = window.location.origin;
+    // ── 会话管理：自动退出 ──────────────────────────────────────
+    function autoLogout(msg) {
+      // 清除服务端 Cookie
+      fetch(`${API_BASE}/api/admin/logout`, { method: 'POST' }).catch(() => {});
+      // 关闭所有弹窗
+      document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+      document.getElementById('dashboard').style.display = 'none';
+      document.getElementById('loginPage').style.display = 'flex';
+      document.getElementById('username').value = '';
+      document.getElementById('password').value = '';
+      const err = document.getElementById('loginError');
+      err.textContent = msg || '会话已过期，请重新登录';
+      err.style.display = 'block';
+    }
+
+    // 全局 fetch 拦截：admin API 返回 401 时自动退出
+    const _origFetch = window.fetch.bind(window);
+    window.fetch = async function(url, opts) {
+      const res = await _origFetch(url, opts);
+      if (res.status === 401 && String(url).includes('/api/admin/')) {
+        autoLogout('会话已过期，请重新登录');
+      }
+      return res;
+    };
+    // ────────────────────────────────────────────────────────────
+
+    // XSS 防护：HTML 实体转义
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/[&<>"']/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      })[c]);
+    }
+
+    // 深色模式
+    function updateDarkMode(isDark) {
+      if (isDark) {
+        document.body.classList.add('dark-mode');
+      } else {
+        document.body.classList.remove('dark-mode');
+      }
+      const btn = document.getElementById('darkModeToggle');
+      if (btn) btn.textContent = isDark ? '☀️ 浅色' : '🌙 深色';
+    }
+    function toggleDarkMode() {
+      const isDark = !document.body.classList.contains('dark-mode');
+      localStorage.setItem('adminDarkMode', isDark ? '1' : '0');
+      updateDarkMode(isDark);
+    }
+    // 初始化深色模式
+    (function initDarkMode() {
+      const stored = localStorage.getItem('adminDarkMode');
+      const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      // 如果有手动设置则使用手动设置，否则跟随系统
+      const isDark = stored !== null ? stored === '1' : systemDark;
+      updateDarkMode(isDark);
+      // 监听系统深色模式变化（仅当没有手动设置时生效）
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+        if (localStorage.getItem('adminDarkMode') === null) {
+          updateDarkMode(e.matches);
+        }
+      });
+    })();
+    let currentPage = 1;
+    let totalPages = 1;
+    let totalRecords = 0;
+    let currentFilters = { openId: '', action: '', device: '', startDate: '', endDate: '' };
+
+    // Cookie 由服务端管理；adminLoggedIn 可读 Cookie 存在时验证后展示后台
+    if (document.cookie.includes('adminLoggedIn=')) {
+      showDashboard(); // 立即显示，避免登录页闪烁
+      _origFetch(`${API_BASE}/api/admin/stats`).then(r => {
+        if (r.ok) { loadStats(); loadLogs(); }
+        else { autoLogout('登录已失效，请重新登录'); }
+      }).catch(() => { loadStats(); loadLogs(); }); // 网络异常时乐观显示
+    }
+
+    // 页码输入框回车事件
+    document.getElementById('jumpPageInput').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        jumpToPage();
+      }
+    });
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        const res = await fetch(`${API_BASE}/api/admin/login`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: document.getElementById('username').value, password: document.getElementById('password').value })
+        });
+        const data = await res.json();
+        if (data.success) { showDashboard(); loadStats(); loadLogs(); }
+        else { document.getElementById('loginError').textContent = data.error || '登录失败'; document.getElementById('loginError').style.display = 'block'; }
+      } catch (e) { document.getElementById('loginError').textContent = '网络错误'; document.getElementById('loginError').style.display = 'block'; }
+    });
+
+    document.getElementById('changePasswordForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        const res = await fetch(`${API_BASE}/api/admin/change-password`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ oldPassword: document.getElementById('oldPassword').value, newPassword: document.getElementById('newPassword').value })
+        });
+        const data = await res.json();
+        if (data.success) { alert('密码修改成功'); hideModal('changePasswordModal'); } else { alert(data.error || '修改失败'); }
+      } catch (e) { alert('网络错误'); }
+    });
+
+    document.getElementById('tagForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        const res = await fetch(`${API_BASE}/api/admin/tag`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ openId: document.getElementById('tagOpenId').value, tag: document.getElementById('tagValue').value })
+        });
+        const data = await res.json();
+        if (data.success) { hideModal('tagModal'); loadLogs(); } else { alert(data.error || '操作失败'); }
+      } catch (e) { alert('网络错误'); }
+    });
+
+    document.getElementById('blockForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        const res = await fetch(`${API_BASE}/api/admin/blacklist/add`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ openId: document.getElementById('blockOpenId').value, reason: document.getElementById('blockReason').value })
+        });
+        const data = await res.json();
+        if (data.success) { hideModal('blockModal'); loadStats(); loadLogs(); } else { alert(data.error || '操作失败'); }
+      } catch (e) { alert('网络错误'); }
+    });
+
+    function showDashboard() { document.getElementById('loginPage').style.display = 'none'; document.getElementById('dashboard').style.display = 'block'; }
+    async function logout() {
+      await fetch(`${API_BASE}/api/admin/logout`, { method: 'POST' }).catch(() => {});
+      location.reload();
+    }
+
+    // ── 日志/用户/黑名单按钮事件委托（替代 onclick 字符串注入）────────────────────
+    function handleActionClick(e) {
+      const btn = e.target.closest('[data-action]');
+      if (!btn) return;
+      const action = btn.dataset.action;
+      const openId = btn.dataset.openid;
+      const tag = btn.dataset.tag || '';
+      if (action === 'tag')     showTagModal(openId, tag);
+      else if (action === 'delete')  deleteUserLogs(openId);
+      else if (action === 'unblock') unblockUser(openId);
+      else if (action === 'block')   showBlockModal(openId);
+      else if (action === 'filter')  filterByUser(openId);
+    }
+    document.getElementById('logsTable').addEventListener('click', handleActionClick);
+    document.getElementById('logCards').addEventListener('click', handleActionClick);
+    document.getElementById('blacklistContent').addEventListener('click', handleActionClick);
+    document.getElementById('usersList').addEventListener('click', handleActionClick);
+    // ──────────────────────────────────────────────────────────────────────────────
+
+    function showModal(id) { document.getElementById(id).style.display = 'flex'; }
+    function hideModal(id) { document.getElementById(id).style.display = 'none'; }
+    function showChangePasswordModal() { showModal('changePasswordModal'); }
+    function showClearLogsModal() { showModal('clearLogsModal'); }
+
+    function showTagModal(openId, currentTag) {
+      document.getElementById('tagOpenId').value = openId;
+      document.getElementById('tagValue').value = currentTag || '';
+      showModal('tagModal');
+    }
+
+    function showBlockModal(openId) {
+      document.getElementById('blockOpenId').value = openId;
+      document.getElementById('blockReason').value = '';
+      showModal('blockModal');
+    }
+
+    async function deleteUserLogs(openId) {
+      if (!confirm(`确定删除 ${openId} 的所有记录吗？此操作不可恢复。`)) return;
+      try {
+        const res = await fetch(`${API_BASE}/api/admin/delete-user-logs`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ openId })
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert(`已删除 ${data.deleted} 条记录`);
+          loadStats();
+          loadLogs();
+        } else {
+          alert(data.error || "删除失败");
+        }
+      } catch (e) { console.error(e); alert("删除失败"); }
+    }
+
+    async function unblockUser(openId) {
+      if (!confirm('确定要解除拉黑吗？')) return;
+      try {
+        const res = await fetch(`${API_BASE}/api/admin/blacklist/remove`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ openId })
+        });
+        const data = await res.json();
+        if (data.success) { loadStats(); loadLogs(); loadBlacklist(); }
+      } catch (e) { alert('网络错误'); }
+    }
+
+    async function showUsersModal() {
+      try {
+        const res = await fetch(`${API_BASE}/api/admin/users`, {
+          headers: {}
+        });
+        const data = await res.json();
+        if (data.success) {
+          document.getElementById("usersCount").textContent = data.data.length;
+          document.getElementById("usersList").innerHTML = data.data.map(u => `
+            <div class="list-item">
+              <div class="list-item-info">
+                <div class="list-item-title" style="font-size:12px;">${escapeHtml(u.open_id)}${u.tag ? `<span class="tag-badge">${escapeHtml(u.tag)}</span>` : ""}</div>
+                <div class="list-item-subtitle">访问 ${u.log_count} 次 · 最后活跃 ${u.last_active ? u.last_active.substring(5,16) : "-"}</div>
+              </div>
+              <button class="btn-small btn-outline" data-action="filter" data-openid="${escapeHtml(u.open_id)}">筛选</button>
+            </div>
+          `).join("") || "<div class=\"empty-state\">暂无用户</div>";
+          showModal("usersModal");
+        }
+      } catch (e) { console.error(e); }
+    }
+
+    function filterByUser(openId) {
+      hideModal("usersModal");
+      document.getElementById("filterOpenId").value = openId;
+      applyFilters();
+    }
+
+    async function showBlacklistModal() {
+      showModal('blacklistModal');
+      await loadBlacklist();
+    }
+
+    async function loadBlacklist() {
+      try {
+        const res = await fetch(`${API_BASE}/api/admin/blacklist`, { headers: {} });
+        const data = await res.json();
+        const container = document.getElementById('blacklistContent');
+        if (data.success && data.data.length > 0) {
+          container.innerHTML = data.data.map(item => `
+            <div class="list-item">
+              <div class="list-item-info">
+                <div class="list-item-title">${escapeHtml(item.open_id)}${item.tag ? `<span class="tag-badge">${escapeHtml(item.tag)}</span>` : ''}</div>
+                <div class="list-item-subtitle">${escapeHtml(item.reason) || '无原因'} · ${formatDate(item.created_at)}</div>
+              </div>
+              <button class="btn btn-small btn-outline" data-action="unblock" data-openid="${escapeHtml(item.open_id)}">解除</button>
+            </div>
+          `).join('');
+        } else {
+          container.innerHTML = '<div class="empty-state">暂无黑名单用户</div>';
+        }
+      } catch (e) { console.error(e); }
+    }
+
+    async function saveRetention() {
+      try {
+        const res = await fetch(`${API_BASE}/api/admin/update-retention`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ days: parseInt(document.getElementById('retentionDays').value) })
+        });
+        if ((await res.json()).success) { alert('设置已保存'); loadStats(); }
+      } catch (e) { alert('网络错误'); }
+    }
+
+    async function clearLogs() {
+      const clearDays = document.getElementById('clearDays').value;
+      if (!confirm(clearDays === 'all' ? '确定清除全部日志？' : `确定清除 ${clearDays} 天前的日志？`)) return;
+      try {
+        const res = await fetch(`${API_BASE}/api/admin/clear-logs`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ days: parseInt(clearDays), clearAll: clearDays === 'all' })
+        });
+        const data = await res.json();
+        if (data.success) { alert(`已删除 ${data.deleted} 条`); hideModal('clearLogsModal'); loadStats(); loadLogs(); }
+      } catch (e) { alert('网络错误'); }
+    }
+
+    function refreshData() { loadStats(); loadLogs(); }
+
+    function applyFilters() {
+      currentFilters.openId = document.getElementById('filterOpenId').value;
+      currentFilters.action = document.getElementById('filterAction').value;
+      currentFilters.device = document.getElementById('filterDevice').value;
+      currentFilters.startDate = document.getElementById('filterStartDate').value;
+      currentFilters.endDate = document.getElementById('filterEndDate').value;
+      currentPage = 1;
+      loadLogs();
+    }
+
+    function resetFilters() {
+      document.getElementById('filterOpenId').value = '';
+      document.getElementById('filterAction').value = '';
+      document.getElementById('filterDevice').value = '';
+      document.getElementById('filterStartDate').value = '';
+      document.getElementById('filterEndDate').value = '';
+      currentFilters = { openId: '', action: '', device: '', startDate: '', endDate: '' };
+      currentPage = 1;
+      loadLogs();
+    }
+
+    async function loadStats() {
+      try {
+        const res = await fetch(`${API_BASE}/api/admin/stats`, { headers: {} });
+        const data = await res.json();
+        if (data.success) {
+          document.getElementById('statTotal').textContent = data.data.totalLogs;
+          document.getElementById('statUnique').textContent = data.data.uniqueOpenIds;
+          document.getElementById('statToday').textContent = data.data.todayLogs;
+          document.getElementById('statBlocked').textContent = data.data.blockedCount;
+          document.getElementById('statRetention').textContent = data.data.logRetentionDays + '天';
+          document.getElementById('retentionDays').value = data.data.logRetentionDays;
+        }
+      } catch (e) { console.error(e); }
+    }
+
+    async function loadLogs() {
+      try {
+        const params = new URLSearchParams({ page: currentPage, limit: 20 });
+        if (currentFilters.openId) params.append('openId', currentFilters.openId);
+        if (currentFilters.action) params.append('action', currentFilters.action);
+        if (currentFilters.device) params.append('device', currentFilters.device);
+        if (currentFilters.startDate) params.append('startDate', currentFilters.startDate);
+        if (currentFilters.endDate) params.append('endDate', currentFilters.endDate);
+
+        const res = await fetch(`${API_BASE}/api/admin/logs?${params}`, { headers: {} });
+        const data = await res.json();
+        if (data.success) {
+          totalPages = data.pagination.totalPages || 1;
+          totalRecords = data.pagination.total;
+          renderLogs(data.data);
+          renderLogCards(data.data);
+          renderPagination(data.pagination);
+        }
+      } catch (e) { console.error(e); }
+    }
+
+    // 详细设备解析
+    function parseDevice(ua) {
+      if (!ua) return { name: '未知', detail: '', badge: '', browser: '' };
+
+      let name = '未知', detail = '', badge = '', browser = '';
+
+      // 解析操作系统和设备
+      if (/iPhone/.test(ua)) {
+        name = 'iPhone';
+        badge = 'ios';
+        const iosMatch = ua.match(/iPhone OS ([\d_]+)/);
+        if (iosMatch) {
+          const iosVer = iosMatch[1].replace(/_/g, '.');
+          detail = `iOS ${iosVer}`;
+        }
+      } else if (/iPad/.test(ua)) {
+        name = 'iPad';
+        badge = 'ios';
+        const iosMatch = ua.match(/CPU OS ([\d_]+)/);
+        if (iosMatch) {
+          const iosVer = iosMatch[1].replace(/_/g, '.');
+          detail = `iPadOS ${iosVer}`;
+        }
+      } else if (/Android/.test(ua)) {
+        badge = 'android';
+        const modelMatch = ua.match(/;\s*([^;)]+)\s*Build/);
+        const verMatch = ua.match(/Android ([\d.]+)/);
+        if (modelMatch && modelMatch[1]) {
+          name = modelMatch[1].trim();
+        } else {
+          name = 'Android';
+        }
+        if (verMatch) {
+          detail = `Android ${verMatch[1]}`;
+        }
+      } else if (/Mac OS X/.test(ua)) {
+        name = 'Mac';
+        badge = 'mac';
+        const macMatch = ua.match(/Mac OS X ([\d_]+)/);
+        if (macMatch) {
+          const macVer = macMatch[1].replace(/_/g, '.');
+          detail = `macOS ${macVer}`;
+        }
+      } else if (/Windows NT/.test(ua)) {
+        name = 'Windows';
+        badge = 'windows';
+        const winMatch = ua.match(/Windows NT ([\d.]+)/);
+        if (winMatch) {
+          const winVer = { '10.0': '10/11', '6.3': '8.1', '6.2': '8', '6.1': '7' }[winMatch[1]] || winMatch[1];
+          detail = `Windows ${winVer}`;
+        }
+      } else if (/Linux/.test(ua)) {
+        name = 'Linux';
+      }
+
+      // 解析浏览器
+      if (/MicroMessenger/.test(ua)) {
+        browser = '微信';
+        badge = 'wechat';
+        const wxMatch = ua.match(/MicroMessenger\/([\d.]+)/);
+        if (wxMatch) browser = `微信 ${wxMatch[1].split('.').slice(0,2).join('.')}`;
+      } else if (/Edg\//.test(ua)) {
+        browser = 'Edge';
+        const edgeMatch = ua.match(/Edg\/([\d]+)/);
+        if (edgeMatch) browser = `Edge ${edgeMatch[1]}`;
+      } else if (/Chrome\//.test(ua) && !/Edg\//.test(ua)) {
+        browser = 'Chrome';
+        const chromeMatch = ua.match(/Chrome\/([\d]+)/);
+        if (chromeMatch) browser = `Chrome ${chromeMatch[1]}`;
+      } else if (/Safari\//.test(ua) && !/Chrome\//.test(ua)) {
+        browser = 'Safari';
+        const safariMatch = ua.match(/Version\/([\d.]+)/);
+        if (safariMatch) browser = `Safari ${safariMatch[1].split('.').slice(0,2).join('.')}`;
+      } else if (/Firefox\//.test(ua)) {
+        browser = 'Firefox';
+        const ffMatch = ua.match(/Firefox\/([\d]+)/);
+        if (ffMatch) browser = `Firefox ${ffMatch[1]}`;
+      }
+
+      return { name, detail, badge, browser };
+    }
+
+    function renderLogs(logs) {
+      document.getElementById('logsTable').innerHTML = logs.map(log => {
+        const device = parseDevice(log.user_agent);
+        const openIdSafe = escapeHtml(log.open_id);
+        const tagSafe = escapeHtml(log.tag);
+        return `
+        <tr>
+          <td style="white-space:nowrap;">${formatDate(log.created_at)}</td>
+          <td>
+            <div class="openid-cell">${openIdSafe}</div>
+            ${log.tag ? `<span class="tag-badge">${tagSafe}</span>` : ''}
+            ${log.blocked_reason !== null ? `<span class="tag-badge blocked-badge">已拉黑</span>` : ''}
+          </td>
+          <td><span class="action-badge ${getActionClass(log.action)}">${formatAction(log.action)}</span></td>
+          <td>
+            <div class="device-info">
+              <div class="device-main">
+                <span class="device-badge ${escapeHtml(device.badge)}">${escapeHtml(device.name)}</span>
+                ${device.browser ? `<span class="device-badge">${escapeHtml(device.browser)}</span>` : ''}
+              </div>
+              ${device.detail ? `<div class="device-detail">${escapeHtml(device.detail)}</div>` : ''}
+            </div>
+          </td>
+          <td class="ip-cell">${escapeHtml(log.ip_address) || '-'}</td>
+          <td class="actions-cell">
+            <button class="btn-tag" data-action="tag" data-openid="${openIdSafe}" data-tag="${tagSafe}">标签</button><button class="btn-delete" data-action="delete" data-openid="${openIdSafe}">删除</button>
+            ${log.blocked_reason !== null
+              ? `<button class="btn-unblock" data-action="unblock" data-openid="${openIdSafe}">解黑</button>`
+              : `<button class="btn-block" data-action="block" data-openid="${openIdSafe}">拉黑</button>`}
+          </td>
+        </tr>
+      `}).join('');
+    }
+
+    function renderLogCards(logs) {
+      document.getElementById('logCards').innerHTML = logs.map(log => {
+        const device = parseDevice(log.user_agent);
+        const openIdSafe = escapeHtml(log.open_id);
+        const tagSafe = escapeHtml(log.tag);
+        return `
+        <div class="log-card">
+          <div class="log-card-header">
+            <span class="log-card-time">${formatDate(log.created_at)}</span>
+            <span class="action-badge ${getActionClass(log.action)}">${formatAction(log.action)}</span>
+          </div>
+          <div class="log-card-openid">
+            ${openIdSafe}
+            ${log.tag ? `<span class="tag-badge">${tagSafe}</span>` : ''}
+            ${log.blocked_reason !== null ? `<span class="tag-badge blocked-badge">已拉黑</span>` : ''}
+          </div>
+          <div class="device-info">
+            <span class="device-badge ${escapeHtml(device.badge)}">${escapeHtml(device.name)}</span>
+            ${device.browser ? `<span class="device-badge">${escapeHtml(device.browser)}</span>` : ''}
+            ${device.detail ? `<span class="device-detail" style="margin-left:4px;">${escapeHtml(device.detail)}</span>` : ''}
+          </div>
+          <div class="log-card-ip">${escapeHtml(log.ip_address) || '-'}</div>
+          <div class="log-card-row">
+            <div></div>
+            <div class="log-card-actions">
+              <button class="btn-tag" data-action="tag" data-openid="${openIdSafe}" data-tag="${tagSafe}">标签</button><button class="btn-delete" data-action="delete" data-openid="${openIdSafe}">删除</button>
+              ${log.blocked_reason !== null
+                ? `<button class="btn-unblock" data-action="unblock" data-openid="${openIdSafe}">解黑</button>`
+                : `<button class="btn-block" data-action="block" data-openid="${openIdSafe}">拉黑</button>`}
+            </div>
+          </div>
+        </div>
+      `}).join('');
+    }
+
+    function renderPagination(p) {
+      let html = '';
+
+      // 首页
+      html += `<button onclick="goToPage(1)" ${p.page <= 1 ? 'disabled' : ''}>首页</button>`;
+      html += `<button onclick="goToPage(${p.page - 1})" ${p.page <= 1 ? 'disabled' : ''}>上页</button>`;
+
+      // 页码按钮
+      const start = Math.max(1, p.page - 2);
+      const end = Math.min(p.totalPages, p.page + 2);
+
+      if (start > 1) {
+        html += `<button onclick="goToPage(1)">1</button>`;
+        if (start > 2) html += `<span style="padding:0 4px;color:#999;">…</span>`;
+      }
+
+      for (let i = start; i <= end; i++) {
+        html += `<button class="${i === p.page ? 'current' : ''}" onclick="goToPage(${i})">${i}</button>`;
+      }
+
+      if (end < p.totalPages) {
+        if (end < p.totalPages - 1) html += `<span style="padding:0 4px;color:#999;">…</span>`;
+        html += `<button onclick="goToPage(${p.totalPages})">${p.totalPages}</button>`;
+      }
+
+      html += `<button onclick="goToPage(${p.page + 1})" ${p.page >= p.totalPages ? 'disabled' : ''}>下页</button>`;
+      html += `<button onclick="goToPage(${p.totalPages})" ${p.page >= p.totalPages ? 'disabled' : ''}>末页</button>`;
+
+      document.getElementById('paginationNav').innerHTML = html;
+
+      // 更新跳转输入框
+      document.getElementById('jumpPageInput').value = p.page;
+      document.getElementById('jumpPageInput').max = p.totalPages;
+      document.getElementById('pageInfo').textContent = `第 ${p.page} 页，共 ${p.totalPages} 页，共 ${p.total} 条记录`;
+    }
+
+    function jumpToPage() {
+      const input = document.getElementById('jumpPageInput');
+      let page = parseInt(input.value);
+      if (isNaN(page) || page < 1) page = 1;
+      if (page > totalPages) page = totalPages;
+      input.value = page;
+      goToPage(page);
+    }
+
+    function goToPage(page) {
+      if (page < 1) page = 1;
+      if (page > totalPages) page = totalPages;
+      currentPage = page;
+      loadLogs();
+      // 滚动到顶部
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // ===== 通知管理 =====
+    async function showNotificationModal() {
+      try {
+        const res = await fetch('/api/admin/notification', {
+          headers: {}
+        });
+        const n = res.ok ? await res.json() : null;
+        if (n) {
+          document.getElementById('notifAdminTitle').value = n.title || '';
+          document.getElementById('notifAdminContent').value = n.content || '';
+          document.getElementById('notifAdminType').value = n.type || 'once';
+          const active = n.is_active === 1;
+          document.getElementById('notifAdminStatus').innerHTML =
+            active
+              ? '<span style="color:#34c759;">● 当前有活跃通知（' + (n.type === 'always' ? '每次弹出' : '首次弹出') + '）</span>'
+              : '<span style="color:#888;">● 当前无活跃通知</span>';
+        } else {
+          document.getElementById('notifAdminTitle').value = '';
+          document.getElementById('notifAdminContent').value = '';
+          document.getElementById('notifAdminType').value = 'once';
+          document.getElementById('notifAdminStatus').innerHTML = '<span style="color:#888;">● 当前无活跃通知</span>';
+        }
+      } catch (e) {
+        document.getElementById('notifAdminStatus').innerHTML = '<span style="color:#ff3b30;">● 加载失败</span>';
+      }
+      document.getElementById('notificationModal').style.display = 'flex';
+    }
+
+    async function saveNotification() {
+      const title = document.getElementById('notifAdminTitle').value.trim();
+      const content = document.getElementById('notifAdminContent').value.trim();
+      const type = document.getElementById('notifAdminType').value;
+      if (!title || !content) { alert('请填写标题和内容'); return; }
+      try {
+        const res = await fetch('/api/admin/notification', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title, content, type, is_active: true })
+        });
+        if (res.ok) {
+          hideModal('notificationModal');
+          showAdminToast('通知已发布');
+        } else {
+          const err = await res.json();
+          alert(err.error || '发布失败');
+        }
+      } catch (e) { alert('网络错误'); }
+    }
+
+    async function disableNotification() {
+      if (!confirm('确认停用当前通知？')) return;
+      try {
+        const res = await fetch('/api/admin/notification', {
+          method: 'DELETE',
+          headers: {}
+        });
+        if (res.ok) {
+          hideModal('notificationModal');
+          showAdminToast('通知已停用');
+        }
+      } catch (e) { alert('网络错误'); }
+    }
+
+    function showAdminToast(msg) {
+      let t = document.getElementById('adminToast');
+      if (!t) {
+        t = document.createElement('div');
+        t.id = 'adminToast';
+        t.style.cssText = 'position:fixed;bottom:32px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 20px;border-radius:20px;font-size:14px;z-index:9999;opacity:0;transition:opacity 0.2s;white-space:nowrap;';
+        document.body.appendChild(t);
+      }
+      t.textContent = msg;
+      t.style.opacity = '1';
+      clearTimeout(t._timer);
+      t._timer = setTimeout(() => { t.style.opacity = '0'; }, 2000);
+    }
+
+    function formatDate(d) { return new Date(d + 'Z').toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }); }
+    function formatAction(a) { var m = { 'qr_manual': '手动刷新', 'qr_auto': '自动刷新', 'qr_timeout': '生成超时', 'qr_blocked': '已被拉黑', 'page_load': '页面加载', 'admin_verify_attempt': '管理员验证', 'admin_verify_success': '验证成功' }; return m[a] || a; }
+    function getActionClass(a) { if (a === 'qr_manual') return 'manual'; if (a === 'qr_auto') return 'auto'; if (a === 'qr_timeout') return 'timeout'; if (a === 'qr_blocked') return 'blocked'; if (a.includes('success')) return 'success'; if (a.includes('verify')) return 'verify'; if (a.includes('load')) return 'load'; return 'refresh'; }
+  </script>
+
+  <!-- 通知管理弹窗 -->
+  <div class="modal" id="notificationModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center;">
+    <div class="modal-content" style="max-width:440px;width:calc(100vw - 32px);">
+      <h2 style="margin-bottom:4px;">管理员通知</h2>
+      <div id="notifAdminStatus" style="font-size:13px;color:#888;margin-bottom:16px;"></div>
+      <div class="form-group">
+        <label>通知标题</label>
+        <input type="text" id="notifAdminTitle" placeholder="通知标题（最多100字符）" maxlength="100">
+      </div>
+      <div class="form-group">
+        <label>通知内容</label>
+        <textarea id="notifAdminContent" rows="5" placeholder="通知内容，支持换行（最多1000字符）" maxlength="1000" style="width:100%;padding:10px 12px;border:1px solid #e5e5ea;border-radius:10px;font-size:14px;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea>
+      </div>
+      <div class="form-group">
+        <label>弹出方式</label>
+        <select id="notifAdminType">
+          <option value="once">仅首次打开时弹出</option>
+          <option value="always">每次打开都弹出</option>
+        </select>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" onclick="hideModal('notificationModal')">取消</button>
+        <button type="button" class="btn" style="background:#ff3b30;color:white;border-color:#ff3b30;" onclick="disableNotification()">停用</button>
+        <button type="button" class="btn" onclick="saveNotification()">发布</button>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
