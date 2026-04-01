@@ -163,18 +163,9 @@
         /*
          * _showOverlay() sets el.style.height = window.innerHeight + 'px', which on
          * iOS Safari/PWA can be smaller than the full screen (excludes home-indicator).
-         * In iOS PWA, 100% of ICB equals the safe-content-area height, not the physical
-         * screen height — so height:100% still leaves a gap at the bottom.
-         * Fix: use height:auto + bottom:calc(-1*safe-area-inset-bottom) to push the
-         * element's bottom edge to the physical screen bottom, same as #btn-area.
+         * _showOverlay() no longer sets inline height — CSS top:0/bottom:0 handles size.
          */
-        #input-dialog,
-        #rate-limit-modal,
-        #version-modal,
-        #notif-modal {
-            height: auto !important;
-            bottom: calc(-1 * env(safe-area-inset-bottom)) !important;
-        }
+        /* (no overrides needed) */
 
         /* ══ INPUT DIALOG ══ */
         #input-dialog {
@@ -1578,7 +1569,8 @@
         }
 
         function _showOverlay(el) {
-            el.style.height = window.innerHeight + 'px';
+            // Do NOT set height inline — CSS top:0/bottom:0 covers the full viewport.
+            // window.innerHeight excludes the iOS safe-area bottom, causing a strip.
             el.style.opacity = '1';
             el.style.pointerEvents = 'auto';
             el.style.visibility = 'visible';
