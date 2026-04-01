@@ -2,8 +2,8 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-IMAGE_NAME="hht-app"
-CONTAINER_NAME="hht-web"
+IMAGE_NAME="hht-lite"
+CONTAINER_NAME="hht-lite"
 DATA_DIR="$SCRIPT_DIR/data"
 BIND_HOST="172.17.0.1"
 CONTAINER_PORT=3100
