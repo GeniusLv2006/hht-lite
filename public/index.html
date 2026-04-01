@@ -337,7 +337,10 @@
          */
         #btn-area {
             position: fixed;
-            bottom: 0;
+            /* bottom:0 in iOS PWA anchors to the safe-area boundary, not the physical
+               screen edge — push down by the inset so the background truly fills to
+               the screen bottom. padding-bottom then lifts content above home indicator. */
+            bottom: calc(-1 * env(safe-area-inset-bottom));
             left: 0;
             right: 0;
             padding: 11px calc(18px + env(safe-area-inset-right)) calc(11px + env(safe-area-inset-bottom)) calc(18px + env(safe-area-inset-left));
