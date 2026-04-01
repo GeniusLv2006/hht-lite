@@ -299,7 +299,8 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 28px 24px;
+            /* padding-bottom accounts for fixed #btn-area height (~127px content + safe area) */
+            padding: 28px 24px calc(127px + env(safe-area-inset-bottom));
             gap: 18px;
             min-height: 0;
         }
@@ -328,15 +329,24 @@
             letter-spacing: 0.04em;
         }
 
-        /* ══ BUTTON AREA ══ */
+        /* ══ BUTTON AREA ══
+         * position:fixed; bottom:0 is the ONLY reliable way to reach the true
+         * screen bottom in iOS PWA. flex-child bottom-edge calculation is unreliable
+         * across iOS versions. fixed+bottom:0 is anchored to the ICB (full screen
+         * including safe areas when viewport-fit=cover).
+         */
         #btn-area {
-            flex-shrink: 0;
-            padding: 11px 18px calc(11px + env(safe-area-inset-bottom));
-            /* btn-area背景延伸至屏幕底部，内容用 padding 抬到 home indicator 上方 */
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 11px calc(18px + env(safe-area-inset-right)) calc(11px + env(safe-area-inset-bottom)) calc(18px + env(safe-area-inset-left));
+            background: var(--bg);
             display: flex;
             flex-direction: column;
             gap: 10px;
             border-top: 1px solid var(--line-faint);
+            z-index: 50;
         }
         .version-footer-row {
             display: flex;
