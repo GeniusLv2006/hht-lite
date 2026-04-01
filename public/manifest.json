@@ -2,11 +2,11 @@
   "name": "慧湖通极速版",
   "start_url": "./index.html",
   "display": "standalone",
-  "theme_color": "#e8e4dd",
-  "background_color": "#e8e4dd",
+  "theme_color": "#111110",
+  "background_color": "#111110",
   "icons": [
     {
-      "src": "ico.png?v=3",
+      "src": "ico.png?v=4",
       "sizes": "512x512",
       "type": "image/png"
     }
