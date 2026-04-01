@@ -1119,7 +1119,7 @@
             <div class="list-item">
               <div class="list-item-info">
                 <div class="list-item-title" style="font-size:12px;">${escapeHtml(u.open_id)}${u.tag ? `<span class="tag-badge">${escapeHtml(u.tag)}</span>` : ""}</div>
-                <div class="list-item-subtitle">访问 ${u.log_count} 次 · 最后活跃 ${u.last_active ? u.last_active.substring(5,16) : "-"}</div>
+                <div class="list-item-subtitle">访问 ${u.log_count} 次 · 最后活跃 ${u.last_active ? formatShortDate(u.last_active) : "-"}</div>
               </div>
               <button class="btn-small btn-outline" data-action="filter" data-openid="${escapeHtml(u.open_id)}">筛选</button>
             </div>
@@ -1525,7 +1525,8 @@
       t._timer = setTimeout(() => { t.style.opacity = '0'; }, 2000);
     }
 
-    function formatDate(d) { return new Date(d + 'Z').toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }); }
+    function formatDate(d) { return new Date(d + 'Z').toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }); }
+    function formatShortDate(d) { return new Date(d + 'Z').toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }); }
     function formatAction(a) { var m = { 'qr_manual': '手动刷新', 'qr_auto': '自动刷新', 'qr_timeout': '生成超时', 'qr_blocked': '已被拉黑', 'page_load': '页面加载', 'admin_verify_attempt': '管理员验证', 'admin_verify_success': '验证成功' }; return m[a] || a; }
     function getActionClass(a) { if (a === 'qr_manual') return 'manual'; if (a === 'qr_auto') return 'auto'; if (a === 'qr_timeout') return 'timeout'; if (a === 'qr_blocked') return 'blocked'; if (a.includes('success')) return 'success'; if (a.includes('verify')) return 'verify'; if (a.includes('load')) return 'load'; return 'refresh'; }
   </script>
