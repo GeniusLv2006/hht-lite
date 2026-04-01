@@ -27,6 +27,7 @@ docker run -d \
   -v "${DATA_DIR}:/app/data" \
   -v "${SCRIPT_DIR}/public:/app/public:ro" \
   -v "${SCRIPT_DIR}/admin:/app/admin:ro" \
+  $([ -f "${SCRIPT_DIR}/.env" ] && echo "--env-file ${SCRIPT_DIR}/.env") \
   "${IMAGE_NAME}:latest"
 
 echo "=== Done ==="
