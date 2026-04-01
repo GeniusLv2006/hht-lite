@@ -8,6 +8,9 @@ data/
 .env
 .env.local
 
+# 个人运维笔记（包含本地路径等私有信息）
+MAINTENANCE.md
+
 # Claude Code 工作文件
 .claude/
 
