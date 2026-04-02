@@ -2,8 +2,9 @@
   "version": "v4.2.0",
   "date": "2026-04-02",
   "changes": [
-    "黑名单支持临时封禁（可设置自动解封时间）",
-    "管理员可自定义封禁提示语",
-    "每 10 分钟自动清理过期封禁记录"
+    "Full UI overhaul: Functional Brutalism design language",
+    "Unified visual system across PWA frontend and admin dashboard",
+    "Font upgrade: Bricolage Grotesque + IBM Plex Mono",
+    "Anti-flash optimization for light (warm parchment) / dark (deep void) dual theme"
   ]
 }
