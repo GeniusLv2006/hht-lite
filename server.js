@@ -456,13 +456,19 @@ app.post('/api/admin/logout', (req, res) => {
 
 // 获取统计（优化：合并查询）
 app.get('/api/admin/stats', authMiddleware, (req, res) => {
+  const todayCST = new Date(Date.now() + 8 * 3600 * 1000).toISOString().substring(0, 10);
+  const todayStart = new Date(todayCST + 'T00:00:00+08:00').toISOString().replace('T', ' ').substring(0, 19);
+  const tomorrowStart = new Date(todayCST + 'T00:00:00+08:00');
+  tomorrowStart.setDate(tomorrowStart.getDate() + 1);
+  const tomorrowStartStr = tomorrowStart.toISOString().replace('T', ' ').substring(0, 19);
+
   const stats = db.prepare(`
-    SELECT 
+    SELECT
       (SELECT COUNT(*) FROM access_logs) as totalLogs,
       (SELECT COUNT(DISTINCT open_id) FROM access_logs) as uniqueOpenIds,
-      (SELECT COUNT(*) FROM access_logs WHERE date(created_at) = date('now')) as todayLogs,
+      (SELECT COUNT(*) FROM access_logs WHERE created_at >= :todayStart AND created_at < :tomorrowStart) as todayLogs,
       (SELECT COUNT(*) FROM blacklist) as blockedCount
-  `).get();
+  `).get({ todayStart, tomorrowStart: tomorrowStartStr });
 
   const retentionConfig = db.prepare('SELECT value FROM config WHERE key = ?').get('log_retention_days');
   const logRetentionDays = retentionConfig ? parseInt(retentionConfig.value) : LOG_RETENTION_DAYS;
@@ -521,12 +527,12 @@ app.get('/api/admin/logs', authMiddleware, (req, res) => {
 
   if (startDate) {
     conditions.push('l.created_at >= ?');
-    params.push(startDate + ' 00:00:00');
+    params.push(new Date(startDate + 'T00:00:00+08:00').toISOString().replace('T', ' ').substring(0, 19));
   }
 
   if (endDate) {
     conditions.push('l.created_at <= ?');
-    params.push(endDate + ' 23:59:59');
+    params.push(new Date(endDate + 'T23:59:59+08:00').toISOString().replace('T', ' ').substring(0, 19));
   }
 
   if (conditions.length > 0) {
