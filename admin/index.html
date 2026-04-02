@@ -825,14 +825,9 @@
             <option value="all">清除全部</option>
           </select>
         </div>
-        <div class="form-group">
-          <label>封禁提示语</label>
-          <input type="text" id="banMessageInput" placeholder="此 OpenID 已被禁用" maxlength="100">
-          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">显示在用户被封禁时的按钮文字</div>
-        </div>
         <div class="modal-actions">
           <button type="button" class="btn btn-outline" onclick="hideModal('clearLogsModal')">取消</button>
-          <button type="button" class="btn" onclick="saveSettings()">保存</button>
+          <button type="button" class="btn" onclick="saveRetention()">保存</button>
           <button type="button" class="btn btn-danger" onclick="clearLogs()">清理</button>
         </div>
       </form>
@@ -870,8 +865,8 @@
           <input type="text" id="blockOpenId" readonly class="readonly-input">
         </div>
         <div class="form-group">
-          <label>拉黑原因（可选）</label>
-          <textarea id="blockReason" rows="3" placeholder="输入拉黑原因"></textarea>
+          <label>封禁提示（显示在用户按钮上，可选）</label>
+          <textarea id="blockReason" rows="3" placeholder="留空则显示默认文字"></textarea>
         </div>
         <div class="form-group">
           <label>自动解封时间（留空为永久封禁）</label>
@@ -1176,20 +1171,13 @@
       } catch (e) { console.error(e); }
     }
 
-    async function saveSettings() {
+    async function saveRetention() {
       try {
-        const retRes = await fetch(`${API_BASE}/api/admin/update-retention`, {
+        const res = await fetch(`${API_BASE}/api/admin/update-retention`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ days: parseInt(document.getElementById('retentionDays').value) })
         });
-        const banMsg = document.getElementById('banMessageInput').value.trim();
-        if (banMsg) {
-          await fetch(`${API_BASE}/api/admin/ban-message`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: banMsg })
-          });
-        }
-        if ((await retRes.json()).success) { alert('设置已保存'); loadStats(); }
+        if ((await res.json()).success) { alert('设置已保存'); loadStats(); }
       } catch (e) { alert('网络错误'); }
     }
 
@@ -1242,11 +1230,6 @@
           document.getElementById('retentionDays').value = data.data.logRetentionDays;
         }
       } catch (e) { console.error(e); }
-      try {
-        const bmRes = await fetch(`${API_BASE}/api/admin/ban-message`, { headers: {} });
-        const bmData = await bmRes.json();
-        if (bmData.success) document.getElementById('banMessageInput').value = bmData.message;
-      } catch (e) {}
     }
 
     async function loadLogs() {
