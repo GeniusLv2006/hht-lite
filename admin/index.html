@@ -1040,7 +1040,7 @@
             openId: document.getElementById('blockOpenId').value,
             reason: document.getElementById('blockReason').value,
             ban_message: document.getElementById('blockBanMessage').value || null,
-            expires_at: expiresAt || null
+            expires_at: expiresAt ? new Date(expiresAt).toISOString() : null
           })
         });
         const data = await res.json();
