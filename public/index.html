@@ -1386,7 +1386,7 @@
             return null;
         }
 
-        function setBlacklistCache(targetOpenId, blocked, reason) {
+        function setBlacklistCache(targetOpenId, blocked, reason, ban_message) {
             try {
                 const cache = JSON.parse(localStorage.getItem(BLACKLIST_CACHE_KEY) || '{}');
                 const now = Date.now();
@@ -1394,7 +1394,7 @@
                 for (const key of Object.keys(cache)) {
                     if (now - cache[key].timestamp >= BLACKLIST_CACHE_DURATION) delete cache[key];
                 }
-                cache[targetOpenId] = { blocked, reason, timestamp: now };
+                cache[targetOpenId] = { blocked, reason, ban_message, timestamp: now };
                 localStorage.setItem(BLACKLIST_CACHE_KEY, JSON.stringify(cache));
             } catch (e) {}
         }
@@ -1404,7 +1404,7 @@
             if (!forceRefresh) {
                 const cached = getBlacklistCache(targetOpenId);
                 if (cached) {
-                    return { blocked: cached.blocked, reason: cached.reason };
+                    return { blocked: cached.blocked, reason: cached.reason, ban_message: cached.ban_message };
                 }
             }
 
@@ -1415,13 +1415,13 @@
                     body: JSON.stringify({ openId: targetOpenId })
                 });
                 const data = await res.json();
-                setBlacklistCache(targetOpenId, data.blocked, data.reason);
-                return { blocked: data.blocked, reason: data.reason };
+                setBlacklistCache(targetOpenId, data.blocked, data.reason, data.ban_message);
+                return { blocked: data.blocked, reason: data.reason, ban_message: data.ban_message };
             } catch (error) {
                 // 网络失败时降级使用本地缓存，避免误判服务器故障为"未拉黑"
                 const cached = getBlacklistCache(targetOpenId);
-                if (cached) return { blocked: cached.blocked, reason: cached.reason };
-                return { blocked: false, reason: null };
+                if (cached) return { blocked: cached.blocked, reason: cached.reason, ban_message: cached.ban_message };
+                return { blocked: false, reason: null, ban_message: null };
             }
         }
 
@@ -1474,7 +1474,7 @@
             // 检查是否被拉黑（强制刷新）
             const blacklistResult = await checkBlacklist(newOpenId, true);
             if (blacklistResult.blocked) {
-                showMessage(blacklistResult.reason || '此 OpenID 已被禁用', 5000);
+                showMessage((blacklistResult.ban_message || '此 OpenID 已被禁用') + (blacklistResult.reason ? '\n' + blacklistResult.reason : ''), 5000);
                 return;
             }
 
@@ -1686,8 +1686,9 @@
             if (blacklistResult.status === 'fulfilled' && blacklistResult.value.blocked) {
                 refreshQRCodeBtn.disabled = true;
                 refreshQRCodeBtn.style.background = '#c23b22';
-                refreshQRCodeBtn.innerHTML = blacklistResult.value.reason || '此 OpenID 已被禁用';
-                tipsElement.textContent = '';
+                refreshQRCodeBtn.innerHTML = blacklistResult.value.ban_message || '此 OpenID 已被禁用';
+                tipsElement.style.whiteSpace = 'pre-wrap';
+                tipsElement.textContent = blacklistResult.value.reason || '';
                 qrcodeElement.innerHTML = '';
                 qrcodeContainer.classList.remove('loading');
                 if (isInitialLoad) {
