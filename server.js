@@ -601,7 +601,9 @@ app.post('/api/admin/blacklist/add', authMiddleware, (req, res) => {
 
   let expiresAt = null;
   if (expires_at) {
-    const d = new Date(expires_at);
+    // 若不含时区信息（datetime-local 原始值），视为 CST（UTC+8）
+    const hasTimezone = /Z$|[+-]\d{2}:\d{2}$/.test(expires_at);
+    const d = new Date(hasTimezone ? expires_at : expires_at + '+08:00');
     if (isNaN(d.getTime()) || d <= new Date()) return res.status(400).json({ error: '解封时间必须是未来时间' });
     expiresAt = d.toISOString().replace('T', ' ').substring(0, 19);
   }
