@@ -825,9 +825,14 @@
             <option value="all">清除全部</option>
           </select>
         </div>
+        <div class="form-group">
+          <label>封禁提示语</label>
+          <input type="text" id="banMessageInput" placeholder="此 OpenID 已被禁用" maxlength="100">
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">显示在用户被封禁时的按钮文字</div>
+        </div>
         <div class="modal-actions">
           <button type="button" class="btn btn-outline" onclick="hideModal('clearLogsModal')">取消</button>
-          <button type="button" class="btn" onclick="saveRetention()">保存</button>
+          <button type="button" class="btn" onclick="saveSettings()">保存</button>
           <button type="button" class="btn btn-danger" onclick="clearLogs()">清理</button>
         </div>
       </form>
@@ -867,6 +872,10 @@
         <div class="form-group">
           <label>拉黑原因（可选）</label>
           <textarea id="blockReason" rows="3" placeholder="输入拉黑原因"></textarea>
+        </div>
+        <div class="form-group">
+          <label>自动解封时间（留空为永久封禁）</label>
+          <input type="datetime-local" id="blockExpiresAt">
         </div>
         <div class="modal-actions">
           <button type="button" class="btn btn-outline" onclick="hideModal('blockModal')">取消</button>
@@ -1024,10 +1033,15 @@
 
     document.getElementById('blockForm').addEventListener('submit', async (e) => {
       e.preventDefault();
+      const expiresAt = document.getElementById('blockExpiresAt').value;
       try {
         const res = await fetch(`${API_BASE}/api/admin/blacklist/add`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ openId: document.getElementById('blockOpenId').value, reason: document.getElementById('blockReason').value })
+          body: JSON.stringify({
+            openId: document.getElementById('blockOpenId').value,
+            reason: document.getElementById('blockReason').value,
+            expires_at: expiresAt || null
+          })
         });
         const data = await res.json();
         if (data.success) { hideModal('blockModal'); loadStats(); loadLogs(); } else { alert(data.error || '操作失败'); }
@@ -1073,6 +1087,7 @@
     function showBlockModal(openId) {
       document.getElementById('blockOpenId').value = openId;
       document.getElementById('blockReason').value = '';
+      document.getElementById('blockExpiresAt').value = '';
       showModal('blockModal');
     }
 
@@ -1149,8 +1164,8 @@
           container.innerHTML = data.data.map(item => `
             <div class="list-item">
               <div class="list-item-info">
-                <div class="list-item-title">${escapeHtml(item.open_id)}${item.tag ? `<span class="tag-badge">${escapeHtml(item.tag)}</span>` : ''}</div>
-                <div class="list-item-subtitle">${escapeHtml(item.reason) || '无原因'} · ${formatDate(item.created_at)}</div>
+                <div class="list-item-title">${escapeHtml(item.open_id)}${item.tag ? `<span class="tag-badge">${escapeHtml(item.tag)}</span>` : ''}${item.expires_at ? `<span class="tag-badge" style="background:rgba(200,130,0,0.15);color:#b87a00;">临时</span>` : ''}</div>
+                <div class="list-item-subtitle">${escapeHtml(item.reason) || '无原因'} · 封禁于 ${formatDate(item.created_at)}${item.expires_at ? ` · 解封于 ${formatDate(item.expires_at)}` : ' · 永久'}</div>
               </div>
               <button class="btn btn-small btn-outline" data-action="unblock" data-openid="${escapeHtml(item.open_id)}">解除</button>
             </div>
@@ -1161,13 +1176,20 @@
       } catch (e) { console.error(e); }
     }
 
-    async function saveRetention() {
+    async function saveSettings() {
       try {
-        const res = await fetch(`${API_BASE}/api/admin/update-retention`, {
+        const retRes = await fetch(`${API_BASE}/api/admin/update-retention`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ days: parseInt(document.getElementById('retentionDays').value) })
         });
-        if ((await res.json()).success) { alert('设置已保存'); loadStats(); }
+        const banMsg = document.getElementById('banMessageInput').value.trim();
+        if (banMsg) {
+          await fetch(`${API_BASE}/api/admin/ban-message`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: banMsg })
+          });
+        }
+        if ((await retRes.json()).success) { alert('设置已保存'); loadStats(); }
       } catch (e) { alert('网络错误'); }
     }
 
@@ -1220,6 +1242,11 @@
           document.getElementById('retentionDays').value = data.data.logRetentionDays;
         }
       } catch (e) { console.error(e); }
+      try {
+        const bmRes = await fetch(`${API_BASE}/api/admin/ban-message`, { headers: {} });
+        const bmData = await bmRes.json();
+        if (bmData.success) document.getElementById('banMessageInput').value = bmData.message;
+      } catch (e) {}
     }
 
     async function loadLogs() {

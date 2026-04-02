@@ -73,7 +73,8 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS blacklist (
     open_id TEXT PRIMARY KEY,
     reason TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    expires_at DATETIME NULL
   );
 
   CREATE TABLE IF NOT EXISTS version_info (
@@ -108,6 +109,13 @@ const existingRetention = db.prepare('SELECT value FROM config WHERE key = ?').g
 if (!existingRetention) {
   db.prepare('INSERT INTO config (key, value) VALUES (?, ?)').run('log_retention_days', String(LOG_RETENTION_DAYS));
 }
+const existingBanMessage = db.prepare('SELECT value FROM config WHERE key = ?').get('ban_message');
+if (!existingBanMessage) {
+  db.prepare('INSERT INTO config (key, value) VALUES (?, ?)').run('ban_message', '此 OpenID 已被禁用');
+}
+
+// 迁移：为旧版数据库添加 expires_at 列（SQLite 不支持 IF NOT EXISTS，用 try-catch）
+try { db.exec('ALTER TABLE blacklist ADD COLUMN expires_at DATETIME NULL'); } catch (e) {}
 
 // 初始管理员账户（仅当数据库为空且设置了 INIT_ADMIN_USER / INIT_ADMIN_PASSWORD 环境变量时创建）
 const initAdminUser = process.env.INIT_ADMIN_USER || 'admin';
@@ -262,6 +270,16 @@ function cleanOldLogs() {
 cleanOldLogs();
 setInterval(cleanOldLogs, 60 * 60 * 1000);
 
+// 定期清理已过期的临时封禁
+function cleanExpiredBans() {
+  const result = db.prepare("DELETE FROM blacklist WHERE expires_at IS NOT NULL AND expires_at <= datetime('now')").run();
+  if (result.changes > 0) {
+    console.log(`[Auto Clean] Removed ${result.changes} expired ban(s)`);
+  }
+}
+cleanExpiredBans();
+setInterval(cleanExpiredBans, 10 * 60 * 1000); // 每 10 分钟检查一次
+
 // 定期执行 WAL checkpoint，释放 SQLite 占用内存
 db.pragma('journal_mode = WAL');
 setInterval(() => {
@@ -311,11 +329,15 @@ function authMiddleware(req, res, next) {
 app.post('/api/check-blacklist', blacklistCheckLimiter, (req, res) => {
   const { openId } = req.body;
   if (!openId || typeof openId !== 'string' || openId.length > 128) return res.json({ success: true, blocked: false });
-  const blocked = db.prepare('SELECT reason FROM blacklist WHERE open_id = ?').get(openId);
+  const blocked = db.prepare(
+    "SELECT reason FROM blacklist WHERE open_id = ? AND (expires_at IS NULL OR expires_at > datetime('now'))"
+  ).get(openId);
+  const banMessageConfig = db.prepare('SELECT value FROM config WHERE key = ?').get('ban_message');
   return res.json({
     success: true,
     blocked: !!blocked,
-    reason: blocked?.reason || null
+    reason: blocked?.reason || null,
+    ban_message: banMessageConfig?.value || '此 OpenID 已被禁用'
   });
 });
 
@@ -569,12 +591,19 @@ app.get('/api/admin/tags', authMiddleware, (req, res) => {
 
 // 黑名单管理
 app.post('/api/admin/blacklist/add', authMiddleware, (req, res) => {
-  const { openId, reason } = req.body;
+  const { openId, reason, expires_at } = req.body;
   if (!openId) return res.status(400).json({ error: 'OpenID 不能为空' });
   if (openId.length > 100) return res.status(400).json({ error: 'OpenID 过长' });
   if (reason && reason.length > 200) return res.status(400).json({ error: '拉黑原因过长（最多200字符）' });
 
-  db.prepare('INSERT OR REPLACE INTO blacklist (open_id, reason) VALUES (?, ?)').run(openId, reason || '');
+  let expiresAt = null;
+  if (expires_at) {
+    const d = new Date(expires_at);
+    if (isNaN(d.getTime()) || d <= new Date()) return res.status(400).json({ error: '解封时间必须是未来时间' });
+    expiresAt = d.toISOString().replace('T', ' ').substring(0, 19);
+  }
+
+  db.prepare('INSERT OR REPLACE INTO blacklist (open_id, reason, expires_at) VALUES (?, ?, ?)').run(openId, reason || '', expiresAt);
   return res.json({ success: true });
 });
 
@@ -592,6 +621,20 @@ app.get('/api/admin/blacklist', authMiddleware, (req, res) => {
     ORDER BY b.created_at DESC
   `).all();
   return res.json({ success: true, data: list });
+});
+
+// 封禁提示语管理
+app.get('/api/admin/ban-message', authMiddleware, (req, res) => {
+  const config = db.prepare('SELECT value FROM config WHERE key = ?').get('ban_message');
+  return res.json({ success: true, message: config?.value || '此 OpenID 已被禁用' });
+});
+
+app.post('/api/admin/ban-message', authMiddleware, (req, res) => {
+  const { message } = req.body;
+  if (!message || typeof message !== 'string') return res.status(400).json({ error: '提示语不能为空' });
+  if (message.length > 100) return res.status(400).json({ error: '提示语过长（最多100字符）' });
+  db.prepare("INSERT INTO config (key, value) VALUES ('ban_message', ?) ON CONFLICT(key) DO UPDATE SET value = ?").run(message, message);
+  return res.json({ success: true });
 });
 
 // 管理员 OpenID 密码
