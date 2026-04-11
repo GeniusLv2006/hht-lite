@@ -921,7 +921,32 @@
     const API_BASE = window.location.origin;
 
     // ── IP 归属地查询（ip.sb）────────────────────────────────────
-    const geoCache = new Map(); // ip → { city, country, country_code } | null
+    const GEO_LS_KEY = 'hht_geo_cache';
+    const GEO_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 天
+
+    // 从 localStorage 恢复缓存（过期条目自动丢弃）
+    const geoCache = (() => {
+      const m = new Map();
+      try {
+        const raw = JSON.parse(localStorage.getItem(GEO_LS_KEY) || '{}');
+        const now = Date.now();
+        for (const [ip, entry] of Object.entries(raw)) {
+          if (now - entry.ts < GEO_TTL_MS) m.set(ip, entry.geo);
+        }
+      } catch {}
+      return m;
+    })();
+
+    function persistGeoCache() {
+      try {
+        const now = Date.now();
+        const obj = {};
+        for (const [ip, geo] of geoCache.entries()) {
+          obj[ip] = { geo, ts: now };
+        }
+        localStorage.setItem(GEO_LS_KEY, JSON.stringify(obj));
+      } catch {}
+    }
 
     function isPrivateIP(ip) {
       if (!ip) return true;
@@ -947,9 +972,11 @@
         const d = await res.json();
         const geo = { city: d.city || '', country: d.country || '', country_code: d.country_code || '' };
         geoCache.set(ip, geo);
+        persistGeoCache();
         return geo;
       } catch {
         geoCache.set(ip, null);
+        // 查询失败不持久化，下次重新尝试
         return null;
       }
     }
