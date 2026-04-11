@@ -1417,17 +1417,15 @@
             });
         });
 
-        // 若已有缓存姓名，立即更新 Header 问候；否则查后端（覆盖 satoken 已缓存、姓名未写入的老用户）
-        if (userName) {
-            updateHeaderGreeting();
-        } else if (openId) {
+        // 若姓名未缓存，提前从后端拉取（覆盖 satoken 已缓存但姓名未写入的老用户）
+        // 注意：不在此处调用 updateHeaderGreeting()，让 hideSplashScreen() 统一触发，确保计时从用户可见时开始
+        if (!userName && openId) {
             fetch(`/api/user-name?openId=${encodeURIComponent(openId)}`)
                 .then(r => r.json())
                 .then(data => {
                     if (data.name) {
                         userName = data.name;
                         localStorage.setItem(USER_NAME_KEY, data.name);
-                        updateHeaderGreeting();
                     }
                 })
                 .catch(() => {});
@@ -1442,6 +1440,7 @@
             splashScreen.classList.add('hidden');
             setTimeout(() => {
                 splashScreen.style.display = 'none';
+                updateHeaderGreeting(); // splash 完全消失后才开始计时
             }, 300);
         }
 
