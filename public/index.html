@@ -1052,7 +1052,7 @@
         <div class="agreement-modal-content">
             <div class="agreement-header">
                 <div class="agreement-title">服务说明与使用协议</div>
-                <div class="agreement-date">生效日期：2026 年 3 月 4 日</div>
+                <div class="agreement-date">生效日期：2026 年 4 月 11 日（本次修订）</div>
             </div>
 
             <div class="agreement-body">
@@ -1064,6 +1064,7 @@
                             <li><strong>"开发者"</strong>：指本服务的独立开发者及运营者。</li>
                             <li><strong>"用户"</strong>：指访问或使用本服务的任何个人。</li>
                             <li><strong>"OpenID"</strong>：指用户在慧湖通系统中的唯一身份标识符，同时作为宿舍门禁二维码的生成凭据。</li>
+                            <li><strong>"真实姓名"及"用户内部 ID（userId）"：</strong>指用户通过慧湖通官方系统身份验证后，由官方 API 返回的真实姓名与内部标识符。本服务在用户成功获取二维码时将其持久化存储于服务端，用于管理后台安全审计。</li>
                         </ul>
                     </div>
                 </div>
@@ -1083,7 +1084,8 @@
                     <div class="agreement-section-content">
                         <p><strong>3.1 数据收集范围</strong></p>
                         <ul>
-                            <li><strong>OpenID、IP 地址：</strong>由开发者收集，用于调用官方 API 生成二维码及安全审计，作为服务器安全日志留存，保留期不超过 30 天。</li>
+                            <li><strong>OpenID、IP 地址及 IP 归属地：</strong>由开发者收集，用于调用官方 API 生成二维码及安全审计，作为服务器安全日志留存，保留期不超过 30 天。其中，IP 归属地信息通过第三方服务 ip.sb 的 GeoIP API 查询获得，查询过程中该服务将接收用户 IP 地址，相关数据处理依 ip.sb 隐私政策执行。</li>
+                            <li><strong>真实姓名、用户内部 ID（userId）：</strong>用户成功通过慧湖通官方 API 身份验证后由开发者收集，持久化存储于服务端，用于管理后台安全审计及异常行为溯源，无自动清除期限，用户可通过第 11 条联系方式申请删除。</li>
                             <li><strong>服务器访问日志：</strong>由开发者收集，用于安全审计与故障排查，保留期不超过 30 天。</li>
                             <li><strong>匿名统计数据：</strong>由 Cloudflare 收集，用于网站访问量统计分析，依 Cloudflare 隐私政策独立处理。</li>
                         </ul>
@@ -1097,41 +1099,32 @@
                         </ul>
                         <p><strong>3.4 安全事件响应</strong></p>
                         <p>如发生数据安全事件，开发者将在知悉后尽合理努力于本服务显著位置公开披露相关情况及已采取的补救措施。</p>
+                        <p><strong>3.5 客户端本地存储（localStorage）</strong></p>
+                        <p>本服务在用户设备浏览器的 localStorage 中存储以下信息，用于维持功能与偏好设置：OpenID（用户填写后本地保存）、登录凭据（satoken，有效期与官方 API 一致）、真实姓名（用于页面问候显示）、用户偏好设置（如 QR 码容错等级）。上述数据仅存于用户本人设备，不通过本服务发送至任何第三方，用户可随时通过浏览器设置清除。</p>
                     </div>
                 </div>
 
                 <div class="agreement-section">
                     <div class="agreement-section-title">4. 用户权利</div>
                     <div class="agreement-section-content">
-                        <p>依据中华人民共和国《个人信息保护法》，用户对本人相关数据享有查阅、更正及删除等法定权利，可通过第 12 条所列联系方式与开发者取得联系以行使上述权利。</p>
+                        <p>依据中华人民共和国《个人信息保护法》，用户对本人相关数据享有查阅、更正及删除等法定权利，可通过第 11 条所列联系方式与开发者取得联系以行使上述权利。</p>
                     </div>
                 </div>
 
                 <div class="agreement-section">
-                    <div class="agreement-section-title">5. 欧盟及英国用户补充条款（GDPR）</div>
-                    <div class="agreement-section-content">
-                        <p>本条款适用于位于欧盟成员国及英国境内的用户，依据 GDPR 及 UK GDPR 制定，与本协议其余条款并行适用。</p>
-                        <p><strong>5.1 数据处理的法律依据：</strong>处理 OpenID 及 IP 地址以提供二维码生成功能（履行服务）；处理访问日志以保障服务安全与稳定运行（合法利益）。</p>
-                        <p><strong>5.2 GDPR 框架下的额外权利：</strong>数据可携权、被遗忘权、反对权、限制处理权。</p>
-                        <p><strong>5.3 数据跨境传输：</strong>Cloudflare 已加入欧盟-美国数据隐私框架（EU-U.S. Data Privacy Framework），提供符合 GDPR 要求的跨境传输保障机制。</p>
-                        <p><strong>5.4 向监管机构投诉的权利：</strong>如认为本服务对您个人数据的处理方式违反了 GDPR，您有权向所在成员国的数据保护监管机构提出投诉，该权利不受本协议任何条款的限制。</p>
-                    </div>
-                </div>
-
-                <div class="agreement-section">
-                    <div class="agreement-section-title">6. 服务访问限制</div>
+                    <div class="agreement-section-title">5. 服务访问限制</div>
                     <div class="agreement-section-content">
                         <p>开发者保留对存在异常行为或滥用本服务的账户限制其访问权限的权利，且无需事先通知。</p>
                         <ul>
                             <li>受限用户将收到明确的访问拒绝提示及说明。</li>
                             <li>本服务的访问限制<strong>不影响用户通过慧湖通官方小程序使用相关功能</strong>。</li>
-                            <li>如用户认为限制系误操作，可通过第 12 条联系方式向开发者提出申诉。</li>
+                            <li>如用户认为限制系误操作，可通过第 11 条联系方式向开发者提出申诉。</li>
                         </ul>
                     </div>
                 </div>
 
                 <div class="agreement-section">
-                    <div class="agreement-section-title">7. 免责声明</div>
+                    <div class="agreement-section-title">6. 免责声明</div>
                     <div class="agreement-section-content">
                         <p><strong>7.1 服务可用性：</strong>开发者保留随时暂停、修改或终止本服务的权利，无需事先通知，且不对服务的持续可用性、功能完整性或信息准确性作任何明示或暗示的保证。</p>
                         <p><strong>特别提示：</strong>本服务依赖慧湖通官方 API 运行。如官方 API 发生变更、限制或停止服务，本服务可能随时受到影响乃至无法正常使用。在任何情况下，<strong>慧湖通官方小程序始终可作为替代方案</strong>。</p>
@@ -1141,40 +1134,41 @@
                 </div>
 
                 <div class="agreement-section">
-                    <div class="agreement-section-title">8. 安全提示</div>
+                    <div class="agreement-section-title">7. 安全提示</div>
                     <div class="agreement-section-content">
                         <p>OpenID 是您在慧湖通系统中的唯一身份标识，<strong>同时也是生成宿舍门禁二维码的直接访问凭据</strong>，其安全性与您的人身及财产安全直接相关。</p>
                         <ul>
                             <li class="warning">OpenID 一旦泄露，他人即可利用其生成您的门禁二维码，<strong>对宿舍物理安全构成直接威胁</strong>。</li>
                             <li>请务必妥善保管，<strong>切勿以截图、转发或任何其他形式向他人披露</strong>。</li>
                             <li>如怀疑 OpenID 已遭泄露或被滥用，请立即停止使用本服务并联系开发者。</li>
+                            <li>本服务在服务端保存了您的 OpenID 与真实姓名的关联记录，用于安全审计。如发生数据安全事件，开发者将按第 3.4 条约定及时披露，并可根据请求删除相关数据（见第 11 条）。</li>
                         </ul>
                     </div>
                 </div>
 
                 <div class="agreement-section">
-                    <div class="agreement-section-title">9. 适用范围与管辖地声明</div>
+                    <div class="agreement-section-title">8. 适用范围与管辖地声明</div>
                     <div class="agreement-section-content">
                         <p>本服务面向中国大陆地区用户设计与运营。若用户从其他国家或地区主动访问并使用本服务，应自行评估并承担其本地法律法规合规义务，开发者不对本服务是否符合中华人民共和国法律体系以外的任何司法管辖区法律作出任何声明或保证。</p>
                     </div>
                 </div>
 
                 <div class="agreement-section">
-                    <div class="agreement-section-title">10. 协议变更</div>
+                    <div class="agreement-section-title">9. 协议变更</div>
                     <div class="agreement-section-content">
                         <p>开发者保留随时修改本协议的权利。协议更新后，将在本页面同步更新版本号及生效日期。用户在协议更新后继续使用本服务，即视为已阅读并接受更新后的全部条款。</p>
                     </div>
                 </div>
 
                 <div class="agreement-section">
-                    <div class="agreement-section-title">11. 适用法律与争议解决</div>
+                    <div class="agreement-section-title">10. 适用法律与争议解决</div>
                     <div class="agreement-section-content">
                         <p>本协议的订立、解释与执行均适用<strong>中华人民共和国法律</strong>。因本协议引起的或与本协议相关的任何争议，双方应首先通过友好协商解决；协商不成的，提交开发者所在地有管辖权的人民法院依法裁决。</p>
                     </div>
                 </div>
 
                 <div class="agreement-section">
-                    <div class="agreement-section-title">12. 联系方式</div>
+                    <div class="agreement-section-title">11. 联系方式</div>
                     <div class="agreement-section-content">
                         <p>如对本协议有任何疑问，或需行使数据相关权利，请通过以下方式联系开发者：</p>
                         <ul>
