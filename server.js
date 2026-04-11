@@ -295,6 +295,12 @@ setInterval(() => {
 
 // ===== 工具函数 =====
 
+// CF-Connecting-IP 由 Cloudflare 基础设施注入，终端用户无法伪造（源站不直接暴露公网）。
+// 不信任可被客户端伪造的 X-Forwarded-For，回退到 req.ip（经 trust proxy 处理的最近代理 IP）。
+function getClientIP(req) {
+  return req.headers['cf-connecting-ip'] || req.ip;
+}
+
 function authMiddleware(req, res, next) {
   // Cookie 优先（HttpOnly），降级兼容 Authorization Bearer
   const cookieHeader = req.headers.cookie || '';
@@ -338,7 +344,7 @@ app.post('/api/check-blacklist', blacklistCheckLimiter, (req, res) => {
 // 验证管理员 OpenID
 app.post('/api/verify-admin', generalLimiter, (req, res) => {
   const { openId, password } = req.body;
-  const ip = req.ip;
+  const ip = getClientIP(req);
   const userAgent = req.headers['user-agent'];
 
   const configOpenId = db.prepare('SELECT value FROM config WHERE key = ?').get('admin_openid');
@@ -381,7 +387,7 @@ app.post('/api/log-access', logLimiter, (req, res) => {
   if (!openId || !action) return res.json({ success: false });
   if (typeof openId !== 'string' || openId.length > 128) return res.status(400).json({ success: false });
   if (typeof action !== 'string' || action.length > 64) return res.status(400).json({ success: false });
-  const ip = req.ip;
+  const ip = getClientIP(req);
   const userAgent = (req.headers['user-agent'] || '').substring(0, 512);
 
   db.prepare('INSERT INTO access_logs (open_id, action, ip_address, user_agent) VALUES (?, ?, ?, ?)')
@@ -440,7 +446,7 @@ app.post('/api/admin/change-password', authMiddleware, (req, res) => {
 
   const newHash = bcrypt.hashSync(newPassword, 10);
   db.prepare('UPDATE admin_users SET password_hash = ? WHERE id = ?').run(newHash, req.user.id);
-  logAdminAction(req.user.username, 'change_password', req.ip);
+  logAdminAction(req.user.username, 'change_password', getClientIP(req));
 
   return res.json({ success: true });
 });
@@ -609,14 +615,14 @@ app.post('/api/admin/blacklist/add', authMiddleware, (req, res) => {
   }
 
   db.prepare('INSERT OR REPLACE INTO blacklist (open_id, reason, ban_message, expires_at) VALUES (?, ?, ?, ?)').run(openId, reason || '', ban_message || null, expiresAt);
-  logAdminAction(req.user.username, `blacklist_add:${openId}`, req.ip);
+  logAdminAction(req.user.username, `blacklist_add:${openId}`, getClientIP(req));
   return res.json({ success: true });
 });
 
 app.post('/api/admin/blacklist/remove', authMiddleware, (req, res) => {
   const { openId } = req.body;
   db.prepare('DELETE FROM blacklist WHERE open_id = ?').run(openId);
-  logAdminAction(req.user.username, `blacklist_remove:${openId}`, req.ip);
+  logAdminAction(req.user.username, `blacklist_remove:${openId}`, getClientIP(req));
   return res.json({ success: true });
 });
 
@@ -657,7 +663,7 @@ app.post('/api/admin/clear-logs', authMiddleware, (req, res) => {
     `).run(daysToKeep);
   }
 
-  logAdminAction(req.user.username, clearAll ? 'clear_logs_all' : `clear_logs_days:${parseInt(days) || 7}`, req.ip);
+  logAdminAction(req.user.username, clearAll ? 'clear_logs_all' : `clear_logs_days:${parseInt(days) || 7}`, getClientIP(req));
   return res.json({ success: true, deleted: result.changes });
 });
 
@@ -667,7 +673,7 @@ app.post('/api/admin/delete-user-logs', authMiddleware, (req, res) => {
   if (!openId) return res.status(400).json({ error: 'OpenID 不能为空' });
 
   const result = db.prepare('DELETE FROM access_logs WHERE open_id = ?').run(openId);
-  logAdminAction(req.user.username, `delete_user_logs:${openId}`, req.ip);
+  logAdminAction(req.user.username, `delete_user_logs:${openId}`, getClientIP(req));
   return res.json({ success: true, deleted: result.changes });
 });
 
