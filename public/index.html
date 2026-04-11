@@ -161,6 +161,27 @@
         }
         #message-box.success { border-left-color: #2d7a4a; }
 
+        /* ══ GREETING TOAST ══ */
+        #greeting-toast {
+            width: 100%;
+            text-align: center;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 13px;
+            color: var(--ink-2);
+            letter-spacing: 0.02em;
+            max-height: 0;
+            overflow: hidden;
+            opacity: 0;
+            pointer-events: none;
+            transition: max-height 0.4s ease, opacity 0.4s ease, margin-bottom 0.4s ease;
+            margin-bottom: 0;
+        }
+        #greeting-toast.show {
+            max-height: 32px;
+            opacity: 1;
+            margin-bottom: 8px;
+        }
+
         /*
          * _showOverlay() sets el.style.height = window.innerHeight + 'px', which on
          * iOS Safari/PWA can be smaller than the full screen (excludes home-indicator).
@@ -427,6 +448,38 @@
         }
         .toggle-switch input:checked + .toggle-slider { background: var(--accent); border-color: var(--accent); }
         .toggle-switch input:checked + .toggle-slider::before { transform: translateX(20px); background: #fff; }
+
+        /* ══ QR ECL SELECTOR ══ */
+        #qr-ecl-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 3px 0;
+        }
+        #qr-ecl-row > span {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            color: var(--ink-2);
+            letter-spacing: 0.04em;
+        }
+        .ecl-group { display: flex; gap: 4px; }
+        .ecl-btn {
+            padding: 2px 10px;
+            border: 1px solid var(--line-faint);
+            background: transparent;
+            color: var(--ink-2);
+            cursor: pointer;
+            font-size: 12px;
+            font-family: 'IBM Plex Mono', monospace;
+            border-radius: 2px;
+            -webkit-tap-highlight-color: transparent;
+            transition: background 0.15s, border-color 0.15s, color 0.15s;
+        }
+        .ecl-btn.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #fff;
+        }
 
         /* ══ RATE LIMIT MODAL ══ */
         #rate-limit-modal {
@@ -918,6 +971,7 @@
     </div>
 
     <div class="main-content">
+        <div id="greeting-toast"></div>
         <div id="qrcode-container">
             <div id="qrcode"></div>
         </div>
@@ -941,6 +995,15 @@
                 <span class="toggle-slider"></span>
             </span>
         </label>
+        <div id="qr-ecl-row" title="容错率越高，二维码越密；在屏幕较脏或光线较暗时可提高">
+            <span>扫码容错</span>
+            <div class="ecl-group" id="ecl-group">
+                <button class="ecl-btn" data-ecl="L">低</button>
+                <button class="ecl-btn" data-ecl="M">中</button>
+                <button class="ecl-btn" data-ecl="Q">高</button>
+                <button class="ecl-btn" data-ecl="H">极高</button>
+            </div>
+        </div>
     </div>
 
     <!-- 请求频率限制弹窗 -->
@@ -1228,6 +1291,32 @@
         const SATOKEN_CACHE_KEY = 'satoken_cache';
         const SATOKEN_TTL_MS = 24 * 60 * 60 * 1000; // 24 小时
 
+        // 用户信息缓存
+        const USER_NAME_KEY = 'user_name';
+        const USER_ID_KEY   = 'user_id';
+
+        // QR 码纠错等级
+        const QR_ECL_KEY     = 'qr_ecl';
+        const QR_ECL_DEFAULT = 'M';
+        let qrEcl = localStorage.getItem(QR_ECL_KEY) || QR_ECL_DEFAULT;
+
+        let userName = localStorage.getItem(USER_NAME_KEY) || '';
+
+        let _greetingShown = false;
+        function updateHeaderGreeting() {
+            if (!userName || _greetingShown) return;
+            if (sessionStorage.getItem('greeting_shown')) return;
+            _greetingShown = true;
+            sessionStorage.setItem('greeting_shown', '1');
+            const toast = document.getElementById('greeting-toast');
+            if (!toast) return;
+            const h = new Date().getHours();
+            const g = h < 11 ? '早上好' : h < 14 ? '中午好' : h < 18 ? '下午好' : '晚上好';
+            toast.textContent = `${g}，${userName}`;
+            requestAnimationFrame(() => toast.classList.add('show'));
+            setTimeout(() => toast.classList.remove('show'), 3500);
+        }
+
         function loadCachedSatoken() {
             try {
                 const c = JSON.parse(localStorage.getItem(SATOKEN_CACHE_KEY) || '{}');
@@ -1316,6 +1405,33 @@
 
         setOpenIdBtn.addEventListener('click', () => handleSetOpenId());
         refreshQRCodeBtn.addEventListener('click', () => refreshQRCode(true));
+
+        // ECL 选择器初始化
+        document.querySelectorAll('.ecl-btn').forEach(btn => {
+            if (btn.dataset.ecl === qrEcl) btn.classList.add('active');
+            btn.addEventListener('click', () => {
+                qrEcl = btn.dataset.ecl;
+                localStorage.setItem(QR_ECL_KEY, qrEcl);
+                document.querySelectorAll('.ecl-btn').forEach(b => b.classList.toggle('active', b === btn));
+                refreshQRCode(true);
+            });
+        });
+
+        // 若已有缓存姓名，立即更新 Header 问候；否则查后端（覆盖 satoken 已缓存、姓名未写入的老用户）
+        if (userName) {
+            updateHeaderGreeting();
+        } else if (openId) {
+            fetch(`/api/user-name?openId=${encodeURIComponent(openId)}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.name) {
+                        userName = data.name;
+                        localStorage.setItem(USER_NAME_KEY, data.name);
+                        updateHeaderGreeting();
+                    }
+                })
+                .catch(() => {});
+        }
 
         function showSplashScreen() {
             splashScreen.style.display = 'flex';
@@ -1528,6 +1644,20 @@
                 if (!satoken) throw new Error('satoken为空');
                 sessionStorage.setItem('satoken', satoken);
                 saveSatokenCache(satoken);
+                // 提取并持久化姓名/userId
+                const respName   = data.data?.name   || '';
+                const respUserId = data.data?.userId || '';
+                if (respName) {
+                    localStorage.setItem(USER_NAME_KEY, respName);
+                    localStorage.setItem(USER_ID_KEY,   respUserId);
+                    userName = respName;
+                    updateHeaderGreeting();
+                }
+                fetch('/api/upsert-user', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ openId, name: respName, userId: respUserId })
+                }).catch(() => {});
                 return 0;
             } catch (error) {
                 hideSplashScreen(); // OpenID 无效时先隐藏 splash，防止其遮挡输入框
@@ -1762,7 +1892,7 @@
             const timeStr = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
             tipsElement.textContent = `上次刷新 ${timeStr}`;
 
-            const qr = qrcode(0, 'L');
+            const qr = qrcode(0, qrEcl);
             qr.addData(data);
             qr.make();
 
@@ -1885,6 +2015,20 @@
                         sessionStorage.setItem('satoken', token);
                         saveSatokenCache(token);
                     }
+                    // 提取并持久化姓名/userId
+                    const respName   = data?.data?.name   || '';
+                    const respUserId = data?.data?.userId || '';
+                    if (respName) {
+                        localStorage.setItem(USER_NAME_KEY, respName);
+                        localStorage.setItem(USER_ID_KEY,   respUserId);
+                        userName = respName;
+                        updateHeaderGreeting();
+                    }
+                    fetch('/api/upsert-user', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ openId, name: respName, userId: respUserId })
+                    }).catch(() => {});
                 })
                 .catch(() => {})
             : null;

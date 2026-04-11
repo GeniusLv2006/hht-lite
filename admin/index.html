@@ -433,6 +433,13 @@
       color: var(--ink-2);
     }
 
+    /* User name subtitle */
+    .user-name-sub {
+      font-size: 11px;
+      color: var(--ink-2);
+      margin-top: 1px;
+    }
+
     /* Tag badge */
     .tag-badge {
       font-family: 'IBM Plex Mono', monospace;
@@ -1146,7 +1153,7 @@
           document.getElementById("usersList").innerHTML = data.data.map(u => `
             <div class="list-item">
               <div class="list-item-info">
-                <div class="list-item-title" style="font-size:12px;">${escapeHtml(u.open_id)}${u.tag ? `<span class="tag-badge">${escapeHtml(u.tag)}</span>` : ""}</div>
+                <div class="list-item-title" style="font-size:12px;">${u.user_name ? `<span style="font-weight:600;">${escapeHtml(u.user_name)}</span> · ` : ''}${escapeHtml(u.open_id)}${u.tag ? `<span class="tag-badge">${escapeHtml(u.tag)}</span>` : ""}</div>
                 <div class="list-item-subtitle">访问 ${u.log_count} 次 · 最后活跃 ${u.last_active ? formatShortDate(u.last_active) : "-"}</div>
               </div>
               <button class="btn-small btn-outline" data-action="filter" data-openid="${escapeHtml(u.open_id)}">筛选</button>
@@ -1363,6 +1370,7 @@
           <td style="white-space:nowrap;">${formatDate(log.created_at)}</td>
           <td>
             <div class="openid-cell">${openIdSafe}</div>
+            ${log.user_name ? `<div class="user-name-sub">${escapeHtml(log.user_name)}</div>` : ''}
             ${log.tag ? `<span class="tag-badge">${tagSafe}</span>` : ''}
             ${log.blocked_reason !== null ? `<span class="tag-badge blocked-badge">已拉黑</span>` : ''}
           </td>
@@ -1403,6 +1411,7 @@
           </div>
           <div class="log-card-openid">
             ${openIdSafe}
+            ${log.user_name ? `<div class="user-name-sub">${escapeHtml(log.user_name)}</div>` : ''}
             ${log.tag ? `<span class="tag-badge">${tagSafe}</span>` : ''}
             ${log.blocked_reason !== null ? `<span class="tag-badge blocked-badge">已拉黑</span>` : ''}
           </div>

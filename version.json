@@ -1,10 +1,10 @@
 {
-  "version": "v4.2.4",
-  "date": "2026-04-02",
+  "version": "v4.3.2",
+  "date": "2026-04-11",
   "changes": [
-    "Full UI overhaul: Functional Brutalism design language",
-    "Unified visual system across PWA frontend and admin dashboard",
-    "Font upgrade: Bricolage Grotesque + IBM Plex Mono",
-    "Anti-flash optimization for light (warm parchment) / dark (deep void) dual theme"
+    "新增：登录后显示时间段问候小弹窗（早上好 / 中午好 / 下午好 / 晚上好）",
+    "新增：扫码容错率可调（低 / 中 / 高 / 极高），默认升级为中",
+    "优化：用户信息安全存储至服务端",
+    "管理后台：日志与用户列表展示增强"
   ]
 }

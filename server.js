@@ -99,6 +99,14 @@ db.exec(`
     is_active INTEGER NOT NULL DEFAULT 0,
     nonce TEXT NOT NULL DEFAULT ''
   );
+
+  CREATE TABLE IF NOT EXISTS users (
+    open_id TEXT PRIMARY KEY,
+    user_id TEXT,
+    name    TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
 `);
 
 // 迁移：为已有数据库添加 ip_geo 列（新建时 CREATE TABLE 里没有，用 ALTER 补充）
@@ -149,10 +157,10 @@ app.use((req, res, next) => {
   res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
   res.setHeader('Content-Security-Policy',
     "default-src 'self'; " +
-    "script-src 'self' 'unsafe-inline'; " +
+    "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com; " +
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
     "font-src 'self' https://fonts.gstatic.com; " +
-    "connect-src 'self' https://api.215123.cn; " +
+    "connect-src 'self' https://api.215123.cn https://challenges.cloudflare.com; " +
     "img-src 'self' data:; " +
     "frame-ancestors 'none'; " +
     "object-src 'none'; " +
@@ -428,6 +436,33 @@ app.post('/api/check-admin', generalLimiter, (req, res) => {
   });
 });
 
+// 记录/更新用户姓名和 userId
+app.post('/api/upsert-user', generalLimiter, (req, res) => {
+  const { openId, name, userId } = req.body;
+  if (!openId || typeof openId !== 'string' || openId.length > 128)
+    return res.json({ success: false });
+  const safeName   = (typeof name   === 'string' ? name   : '').substring(0, 32);
+  const safeUserId = (typeof userId === 'string' ? userId : '').substring(0, 64);
+  db.prepare(`
+    INSERT INTO users (open_id, user_id, name) VALUES (?, ?, ?)
+    ON CONFLICT(open_id) DO UPDATE SET
+      user_id    = excluded.user_id,
+      name       = excluded.name,
+      updated_at = datetime('now')
+  `).run(openId, safeUserId, safeName);
+  return res.json({ success: true });
+});
+
+// 查询已存储的用户姓名（供有缓存 satoken 的老用户冷启动时使用）
+app.get('/api/user-name', generalLimiter, (req, res) => {
+  const { openId } = req.query;
+  if (!openId || typeof openId !== 'string' || openId.length > 128)
+    return res.json({ success: false, name: '' });
+  const row = db.prepare('SELECT name FROM users WHERE open_id = ?').get(openId);
+  res.setHeader('Cache-Control', 'no-store');
+  return res.json({ success: true, name: row?.name || '' });
+});
+
 // 记录访问日志
 app.post('/api/log-access', logLimiter, (req, res) => {
   const { openId, action } = req.body;
@@ -449,7 +484,7 @@ app.post('/api/log-access', logLimiter, (req, res) => {
 // 获取当前版本信息
 app.get('/api/version', generalLimiter, (req, res) => {
   const info = db.prepare('SELECT version, release_date, changes FROM version_info WHERE id = 1').get();
-  res.setHeader('Cache-Control', 'public, max-age=300');
+  res.setHeader('Cache-Control', 'no-store');
   if (info) {
     res.json({ version: info.version, date: info.release_date, changes: JSON.parse(info.changes) });
   } else {
@@ -546,10 +581,11 @@ app.get('/api/admin/logs', authMiddleware, (req, res) => {
   const endDate = req.query.endDate || '';
 
   let query = `
-    SELECT l.*, t.tag, b.reason as blocked_reason
+    SELECT l.*, t.tag, b.reason as blocked_reason, u.name as user_name, u.user_id
     FROM access_logs l
     LEFT JOIN openid_tags t ON l.open_id = t.open_id
     LEFT JOIN blacklist b ON l.open_id = b.open_id
+    LEFT JOIN users u ON l.open_id = u.open_id
   `;
   let countQuery = 'SELECT COUNT(*) as total FROM access_logs l';
   const conditions = [];
@@ -611,11 +647,12 @@ app.get('/api/admin/logs', authMiddleware, (req, res) => {
 // 获取用户列表
 app.get('/api/admin/users', authMiddleware, (req, res) => {
   const users = db.prepare(`
-    SELECT DISTINCT l.open_id, t.tag, 
+    SELECT DISTINCT l.open_id, t.tag, u.name as user_name,
       (SELECT COUNT(*) FROM access_logs WHERE open_id = l.open_id) as log_count,
       (SELECT MAX(created_at) FROM access_logs WHERE open_id = l.open_id) as last_active
     FROM access_logs l
     LEFT JOIN openid_tags t ON l.open_id = t.open_id
+    LEFT JOIN users u ON l.open_id = u.open_id
     ORDER BY last_active DESC
     LIMIT 500
   `).all();
