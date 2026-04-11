@@ -294,13 +294,6 @@ setInterval(() => {
 }, 60 * 60 * 1000);
 
 // ===== 工具函数 =====
-function getClientIP(req) {
-  return req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
-         req.headers['x-real-ip'] ||
-         req.headers['cf-connecting-ip'] ||
-         req.connection?.remoteAddress ||
-         req.ip;
-}
 
 function authMiddleware(req, res, next) {
   // Cookie 优先（HttpOnly），降级兼容 Authorization Bearer
@@ -318,6 +311,11 @@ function authMiddleware(req, res, next) {
   } catch (error) {
     return res.status(401).json({ error: 'Token 无效' });
   }
+}
+
+function logAdminAction(username, action, ip) {
+  db.prepare('INSERT INTO access_logs (open_id, action, ip_address) VALUES (?, ?, ?)')
+    .run(`admin:${username}`, action, ip);
 }
 
 // ===== 前端 API =====
@@ -340,7 +338,7 @@ app.post('/api/check-blacklist', blacklistCheckLimiter, (req, res) => {
 // 验证管理员 OpenID
 app.post('/api/verify-admin', generalLimiter, (req, res) => {
   const { openId, password } = req.body;
-  const ip = getClientIP(req);
+  const ip = req.ip;
   const userAgent = req.headers['user-agent'];
 
   const configOpenId = db.prepare('SELECT value FROM config WHERE key = ?').get('admin_openid');
@@ -383,7 +381,7 @@ app.post('/api/log-access', logLimiter, (req, res) => {
   if (!openId || !action) return res.json({ success: false });
   if (typeof openId !== 'string' || openId.length > 128) return res.status(400).json({ success: false });
   if (typeof action !== 'string' || action.length > 64) return res.status(400).json({ success: false });
-  const ip = getClientIP(req);
+  const ip = req.ip;
   const userAgent = (req.headers['user-agent'] || '').substring(0, 512);
 
   db.prepare('INSERT INTO access_logs (open_id, action, ip_address, user_agent) VALUES (?, ?, ?, ?)')
@@ -431,8 +429,8 @@ app.post('/api/admin/login', loginLimiter, (req, res) => {
 app.post('/api/admin/change-password', authMiddleware, (req, res) => {
   const { oldPassword, newPassword } = req.body;
 
-  if (!newPassword || newPassword.length < 6) {
-    return res.status(400).json({ error: '新密码至少6位' });
+  if (!newPassword || newPassword.length < 8) {
+    return res.status(400).json({ error: '新密码至少8位' });
   }
 
   const user = db.prepare('SELECT * FROM admin_users WHERE id = ?').get(req.user.id);
@@ -442,6 +440,7 @@ app.post('/api/admin/change-password', authMiddleware, (req, res) => {
 
   const newHash = bcrypt.hashSync(newPassword, 10);
   db.prepare('UPDATE admin_users SET password_hash = ? WHERE id = ?').run(newHash, req.user.id);
+  logAdminAction(req.user.username, 'change_password', req.ip);
 
   return res.json({ success: true });
 });
@@ -598,6 +597,7 @@ app.post('/api/admin/blacklist/add', authMiddleware, (req, res) => {
   if (openId.length > 100) return res.status(400).json({ error: 'OpenID 过长' });
   if (reason && reason.length > 200) return res.status(400).json({ error: '拉黑原因过长（最多200字符）' });
   if (ban_message && ban_message.length > 100) return res.status(400).json({ error: '按钮文字过长（最多100字符）' });
+  if (ban_message && /<[^>]+>/.test(ban_message)) return res.status(400).json({ error: '按钮文字不能包含 HTML 标签' });
 
   let expiresAt = null;
   if (expires_at) {
@@ -609,12 +609,14 @@ app.post('/api/admin/blacklist/add', authMiddleware, (req, res) => {
   }
 
   db.prepare('INSERT OR REPLACE INTO blacklist (open_id, reason, ban_message, expires_at) VALUES (?, ?, ?, ?)').run(openId, reason || '', ban_message || null, expiresAt);
+  logAdminAction(req.user.username, `blacklist_add:${openId}`, req.ip);
   return res.json({ success: true });
 });
 
 app.post('/api/admin/blacklist/remove', authMiddleware, (req, res) => {
   const { openId } = req.body;
   db.prepare('DELETE FROM blacklist WHERE open_id = ?').run(openId);
+  logAdminAction(req.user.username, `blacklist_remove:${openId}`, req.ip);
   return res.json({ success: true });
 });
 
@@ -631,8 +633,8 @@ app.get('/api/admin/blacklist', authMiddleware, (req, res) => {
 // 管理员 OpenID 密码
 app.post('/api/admin/update-openid-password', authMiddleware, (req, res) => {
   const { newPassword } = req.body;
-  if (!newPassword || newPassword.length < 6) {
-    return res.status(400).json({ error: '密码至少6位' });
+  if (!newPassword || newPassword.length < 8) {
+    return res.status(400).json({ error: '密码至少8位' });
   }
 
   const newHash = bcrypt.hashSync(newPassword, 10);
@@ -655,6 +657,7 @@ app.post('/api/admin/clear-logs', authMiddleware, (req, res) => {
     `).run(daysToKeep);
   }
 
+  logAdminAction(req.user.username, clearAll ? 'clear_logs_all' : `clear_logs_days:${parseInt(days) || 7}`, req.ip);
   return res.json({ success: true, deleted: result.changes });
 });
 
@@ -664,6 +667,7 @@ app.post('/api/admin/delete-user-logs', authMiddleware, (req, res) => {
   if (!openId) return res.status(400).json({ error: 'OpenID 不能为空' });
 
   const result = db.prepare('DELETE FROM access_logs WHERE open_id = ?').run(openId);
+  logAdminAction(req.user.username, `delete_user_logs:${openId}`, req.ip);
   return res.json({ success: true, deleted: result.changes });
 });
 

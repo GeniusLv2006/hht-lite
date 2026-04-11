@@ -1686,7 +1686,7 @@
             if (blacklistResult.status === 'fulfilled' && blacklistResult.value.blocked) {
                 refreshQRCodeBtn.disabled = true;
                 refreshQRCodeBtn.style.background = '#c23b22';
-                refreshQRCodeBtn.innerHTML = blacklistResult.value.ban_message || '此 OpenID 已被禁用';
+                refreshQRCodeBtn.textContent = blacklistResult.value.ban_message || '此 OpenID 已被禁用';
                 tipsElement.style.whiteSpace = 'pre-wrap';
                 tipsElement.textContent = blacklistResult.value.reason || '';
                 qrcodeElement.innerHTML = '';
