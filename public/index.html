@@ -1314,7 +1314,7 @@
             const g = h < 11 ? '早上好' : h < 14 ? '中午好' : h < 18 ? '下午好' : '晚上好';
             toast.textContent = `${g}，${userName}`;
             requestAnimationFrame(() => toast.classList.add('show'));
-            setTimeout(() => toast.classList.remove('show'), 3500);
+            setTimeout(() => toast.classList.remove('show'), 8000);
         }
 
         function loadCachedSatoken() {
