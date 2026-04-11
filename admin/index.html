@@ -375,6 +375,16 @@
       color: var(--ink-2);
     }
     .ip-cell { font-size: 11px; color: var(--ink-2); }
+    .ip-geo {
+      font-size: 10px;
+      color: var(--ink-2);
+      margin-top: 2px;
+      opacity: 0.75;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 160px;
+    }
     .actions-cell { white-space: nowrap; }
 
     /* Action badges */
@@ -476,6 +486,11 @@
       font-size: 11px;
       color: var(--ink-2);
       margin: 4px 0;
+    }
+    .log-card-ip .ip-geo {
+      font-size: 10px;
+      opacity: 0.75;
+      margin-top: 1px;
     }
     .log-card-row {
       display: flex;
@@ -908,6 +923,68 @@
 
   <script>
     const API_BASE = window.location.origin;
+
+    // ── IP 归属地查询（ip.sb）────────────────────────────────────
+    const geoCache = new Map(); // ip → { city, country, country_code } | null
+
+    function isPrivateIP(ip) {
+      if (!ip) return true;
+      if (/^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|127\.|169\.254\.)/.test(ip)) return true;
+      if (ip === '::1' || /^(fc|fd|fe80)/i.test(ip)) return true;
+      return false;
+    }
+
+    function flagEmoji(code) {
+      if (!code || code.length !== 2) return '';
+      try {
+        return String.fromCodePoint(...code.toUpperCase().split('').map(c => 0x1F1E6 + c.charCodeAt(0) - 65));
+      } catch { return ''; }
+    }
+
+    async function fetchGeoIP(ip) {
+      if (geoCache.has(ip)) return geoCache.get(ip);
+      try {
+        const res = await fetch(`https://api.ip.sb/geoip/${encodeURIComponent(ip)}`, {
+          headers: { 'Accept': 'application/json' }
+        });
+        if (!res.ok) throw new Error('http ' + res.status);
+        const d = await res.json();
+        const geo = { city: d.city || '', country: d.country || '', country_code: d.country_code || '' };
+        geoCache.set(ip, geo);
+        return geo;
+      } catch {
+        geoCache.set(ip, null);
+        return null;
+      }
+    }
+
+    function applyGeo(ip, geo) {
+      document.querySelectorAll(`[data-ip="${CSS.escape(ip)}"] .ip-geo`).forEach(el => {
+        if (!geo) { el.textContent = ''; return; }
+        const flag = flagEmoji(geo.country_code);
+        const parts = [geo.city, geo.country].filter(Boolean).join(' · ');
+        el.textContent = flag ? `${flag} ${parts}` : parts;
+      });
+    }
+
+    async function enrichWithGeo(logs) {
+      // 先回填已缓存的 IP
+      logs.forEach(log => {
+        if (log.ip_address && geoCache.has(log.ip_address)) {
+          applyGeo(log.ip_address, geoCache.get(log.ip_address));
+        }
+      });
+      // 未缓存的去重后逐个查询（100ms 间隔，避免触发速率限制）
+      const pending = [...new Set(
+        logs.map(l => l.ip_address).filter(ip => ip && !isPrivateIP(ip) && !geoCache.has(ip))
+      )];
+      for (let i = 0; i < pending.length; i++) {
+        const ip = pending[i];
+        const geo = await fetchGeoIP(ip);
+        applyGeo(ip, geo);
+        if (i < pending.length - 1) await new Promise(r => setTimeout(r, 120));
+      }
+    }
     // ── 会话管理：自动退出 ──────────────────────────────────────
     function autoLogout(msg) {
       // 清除服务端 Cookie
@@ -1255,6 +1332,7 @@
           renderLogs(data.data);
           renderLogCards(data.data);
           renderPagination(data.pagination);
+          enrichWithGeo(data.data);
         }
       } catch (e) { console.error(e); }
     }
@@ -1364,7 +1442,10 @@
               ${device.detail ? `<div class="device-detail">${escapeHtml(device.detail)}</div>` : ''}
             </div>
           </td>
-          <td class="ip-cell">${escapeHtml(log.ip_address) || '-'}</td>
+          <td class="ip-cell" data-ip="${escapeHtml(log.ip_address || '')}">
+            ${escapeHtml(log.ip_address) || '-'}
+            ${log.ip_address && !isPrivateIP(log.ip_address) ? '<div class="ip-geo"></div>' : ''}
+          </td>
           <td class="actions-cell">
             <button class="btn-tag" data-action="tag" data-openid="${openIdSafe}" data-tag="${tagSafe}">标签</button><button class="btn-delete" data-action="delete" data-openid="${openIdSafe}">删除</button>
             ${log.blocked_reason !== null
@@ -1396,7 +1477,10 @@
             ${device.browser ? `<span class="device-badge">${escapeHtml(device.browser)}</span>` : ''}
             ${device.detail ? `<span class="device-detail" style="margin-left:4px;">${escapeHtml(device.detail)}</span>` : ''}
           </div>
-          <div class="log-card-ip">${escapeHtml(log.ip_address) || '-'}</div>
+          <div class="log-card-ip" data-ip="${escapeHtml(log.ip_address || '')}">
+            ${escapeHtml(log.ip_address) || '-'}
+            ${log.ip_address && !isPrivateIP(log.ip_address) ? '<div class="ip-geo"></div>' : ''}
+          </div>
           <div class="log-card-row">
             <div></div>
             <div class="log-card-actions">

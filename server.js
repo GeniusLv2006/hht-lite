@@ -149,7 +149,7 @@ app.use((req, res, next) => {
     "script-src 'self' 'unsafe-inline'; " +
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
     "font-src 'self' https://fonts.gstatic.com; " +
-    "connect-src 'self' https://api.215123.cn; " +
+    "connect-src 'self' https://api.215123.cn https://api.ip.sb; " +
     "img-src 'self' data:; " +
     "frame-ancestors 'none'; " +
     "object-src 'none'; " +
