@@ -1,5 +1,5 @@
 {
-  "version": "v4.3.5",
+  "version": "v4.3.6",
   "date": "2026-04-11",
   "changes": [
     "更新：用户协议（补充账户信息存储、ip.sb 归属地查询及 localStorage 披露，删除 GDPR 条款）"
