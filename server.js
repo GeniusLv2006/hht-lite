@@ -101,6 +101,9 @@ db.exec(`
   );
 `);
 
+// 迁移：为已有数据库添加 ip_geo 列（新建时 CREATE TABLE 里没有，用 ALTER 补充）
+try { db.exec('ALTER TABLE access_logs ADD COLUMN ip_geo TEXT'); } catch {}
+
 // 初始化配置
 const existingOpenId = db.prepare('SELECT value FROM config WHERE key = ?').get('admin_openid');
 if (!existingOpenId) {
@@ -149,7 +152,7 @@ app.use((req, res, next) => {
     "script-src 'self' 'unsafe-inline'; " +
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
     "font-src 'self' https://fonts.gstatic.com; " +
-    "connect-src 'self' https://api.215123.cn https://api.ip.sb; " +
+    "connect-src 'self' https://api.215123.cn; " +
     "img-src 'self' data:; " +
     "frame-ancestors 'none'; " +
     "object-src 'none'; " +
@@ -319,6 +322,48 @@ function authMiddleware(req, res, next) {
   }
 }
 
+// ── 服务端 IP 归属地（ip.sb）──────────────────────────────────
+const serverGeoCache = new Map(); // ip → "🇺🇸 City · Country" | null
+
+function isPrivateIP(ip) {
+  if (!ip) return true;
+  if (/^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|127\.|169\.254\.)/.test(ip)) return true;
+  if (ip === '::1' || /^(fc|fd|fe80)/i.test(ip)) return true;
+  return false;
+}
+
+function flagEmoji(code) {
+  if (!code || code.length !== 2) return '';
+  try {
+    return String.fromCodePoint(...code.toUpperCase().split('').map(c => 0x1F1E6 + c.charCodeAt(0) - 65));
+  } catch { return ''; }
+}
+
+async function fetchAndStoreGeo(ip, logId) {
+  if (isPrivateIP(ip)) return;
+  // 已缓存：直接写库
+  if (serverGeoCache.has(ip)) {
+    const geo = serverGeoCache.get(ip);
+    if (geo) db.prepare('UPDATE access_logs SET ip_geo = ? WHERE id = ?').run(geo, logId);
+    return;
+  }
+  try {
+    const res = await fetch(`https://api.ip.sb/geoip/${encodeURIComponent(ip)}`, {
+      headers: { 'Accept': 'application/json', 'User-Agent': 'hht-lite/1.0' },
+      signal: AbortSignal.timeout(6000)
+    });
+    if (!res.ok) throw new Error('http ' + res.status);
+    const d = await res.json();
+    const flag = flagEmoji(d.country_code);
+    const parts = [d.city, d.country].filter(Boolean).join(' · ');
+    const geo = flag ? `${flag} ${parts}` : parts;
+    serverGeoCache.set(ip, geo || null);
+    if (geo) db.prepare('UPDATE access_logs SET ip_geo = ? WHERE id = ?').run(geo, logId);
+  } catch {
+    serverGeoCache.set(ip, null); // 失败也缓存，避免重复请求
+  }
+}
+
 function logAdminAction(username, action, ip) {
   db.prepare('INSERT INTO access_logs (open_id, action, ip_address) VALUES (?, ?, ?)')
     .run(`admin:${username}`, action, ip);
@@ -354,8 +399,9 @@ app.post('/api/verify-admin', generalLimiter, (req, res) => {
     return res.json({ success: true, isAdmin: false });
   }
 
-  db.prepare('INSERT INTO access_logs (open_id, action, ip_address, user_agent) VALUES (?, ?, ?, ?)')
+  const r1 = db.prepare('INSERT INTO access_logs (open_id, action, ip_address, user_agent) VALUES (?, ?, ?, ?)')
     .run(openId, 'admin_verify_attempt', ip, userAgent);
+  fetchAndStoreGeo(ip, r1.lastInsertRowid).catch(() => {});
 
   if (!configHash) {
     return res.json({ success: true, isAdmin: true, verified: false });
@@ -364,8 +410,9 @@ app.post('/api/verify-admin', generalLimiter, (req, res) => {
   const isValid = bcrypt.compareSync(password, configHash.value);
 
   if (isValid) {
-    db.prepare('INSERT INTO access_logs (open_id, action, ip_address, user_agent) VALUES (?, ?, ?, ?)')
+    const r2 = db.prepare('INSERT INTO access_logs (open_id, action, ip_address, user_agent) VALUES (?, ?, ?, ?)')
       .run(openId, 'admin_verify_success', ip, userAgent);
+    fetchAndStoreGeo(ip, r2.lastInsertRowid).catch(() => {});
   }
 
   return res.json({ success: true, isAdmin: true, verified: isValid });
@@ -390,8 +437,11 @@ app.post('/api/log-access', logLimiter, (req, res) => {
   const ip = getClientIP(req);
   const userAgent = (req.headers['user-agent'] || '').substring(0, 512);
 
-  db.prepare('INSERT INTO access_logs (open_id, action, ip_address, user_agent) VALUES (?, ?, ?, ?)')
+  const { lastInsertRowid } = db.prepare('INSERT INTO access_logs (open_id, action, ip_address, user_agent) VALUES (?, ?, ?, ?)')
     .run(openId, action, ip, userAgent);
+
+  // 异步查询 geo，不阻塞响应
+  fetchAndStoreGeo(ip, lastInsertRowid).catch(() => {});
 
   return res.json({ success: true });
 });
