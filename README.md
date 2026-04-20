@@ -4,6 +4,8 @@
 
 > 前端 PWA 基于 [hht-web](https://github.com/mercutiojohn/hht-web)，感谢 [@PairZhu](https://github.com/PairZhu)。
 
+## DEMO
+https://huihutong.xjtlu.uk
 ---
 
 ## 技术栈
