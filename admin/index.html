@@ -753,6 +753,7 @@
               <option value="qr_auto">自动刷新</option>
               <option value="qr_timeout">生成超时</option>
               <option value="qr_blocked">已被拉黑</option>
+              <option value="admin_verify">管理员验证</option>
             </select>
             <select class="filter-select" id="filterDevice">
               <option value="">全部设备</option>
@@ -1588,7 +1589,7 @@
 
     function formatDate(d) { return new Date(d + 'Z').toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }); }
     function formatShortDate(d) { return new Date(d + 'Z').toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }); }
-    function formatAction(a) { var m = { 'qr_manual': '手动刷新', 'qr_auto': '自动刷新', 'qr_timeout': '生成超时', 'qr_blocked': '已被拉黑', 'page_load': '页面加载' }; return m[a] || '未知操作'; }
+    function formatAction(a) { var m = { 'qr_manual': '手动刷新', 'qr_auto': '自动刷新', 'qr_timeout': '生成超时', 'qr_blocked': '已被拉黑', 'page_load': '页面加载', 'admin_verify_attempt': '管理员验证', 'admin_verify_success': '验证成功' }; return m[a] || '未知操作'; }
     function getActionClass(a) { if (a === 'qr_manual') return 'manual'; if (a === 'qr_auto') return 'auto'; if (a === 'qr_timeout') return 'timeout'; if (a === 'qr_blocked') return 'blocked'; if (a.includes('success')) return 'success'; if (a.includes('verify')) return 'verify'; if (a.includes('load')) return 'load'; return 'refresh'; }
   </script>
 
