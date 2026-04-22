@@ -1365,6 +1365,7 @@
         const device = parseDevice(log.user_agent);
         const openIdSafe = escapeHtml(log.open_id);
         const tagSafe = escapeHtml(log.tag);
+        const actionLabel = escapeHtml(formatAction(log.action));
         return `
         <tr>
           <td style="white-space:nowrap;">${formatDate(log.created_at)}</td>
@@ -1374,7 +1375,7 @@
             ${log.tag ? `<span class="tag-badge">${tagSafe}</span>` : ''}
             ${log.blocked_reason !== null ? `<span class="tag-badge blocked-badge">已拉黑</span>` : ''}
           </td>
-          <td><span class="action-badge ${getActionClass(log.action)}">${formatAction(log.action)}</span></td>
+          <td><span class="action-badge ${getActionClass(log.action)}">${actionLabel}</span></td>
           <td>
             <div class="device-info">
               <div class="device-main">
@@ -1403,11 +1404,12 @@
         const device = parseDevice(log.user_agent);
         const openIdSafe = escapeHtml(log.open_id);
         const tagSafe = escapeHtml(log.tag);
+        const actionLabel = escapeHtml(formatAction(log.action));
         return `
         <div class="log-card">
           <div class="log-card-header">
             <span class="log-card-time">${formatDate(log.created_at)}</span>
-            <span class="action-badge ${getActionClass(log.action)}">${formatAction(log.action)}</span>
+            <span class="action-badge ${getActionClass(log.action)}">${actionLabel}</span>
           </div>
           <div class="log-card-openid">
             ${openIdSafe}
@@ -1570,7 +1572,7 @@
 
     function formatDate(d) { return new Date(d + 'Z').toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }); }
     function formatShortDate(d) { return new Date(d + 'Z').toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }); }
-    function formatAction(a) { var m = { 'qr_manual': '手动刷新', 'qr_auto': '自动刷新', 'qr_timeout': '生成超时', 'qr_blocked': '已被拉黑', 'page_load': '页面加载', 'admin_verify_attempt': '管理员验证', 'admin_verify_success': '验证成功' }; return m[a] || a; }
+    function formatAction(a) { var m = { 'qr_manual': '手动刷新', 'qr_auto': '自动刷新', 'qr_timeout': '生成超时', 'qr_blocked': '已被拉黑', 'page_load': '页面加载', 'admin_verify_attempt': '管理员验证', 'admin_verify_success': '验证成功' }; return m[a] || '未知操作'; }
     function getActionClass(a) { if (a === 'qr_manual') return 'manual'; if (a === 'qr_auto') return 'auto'; if (a === 'qr_timeout') return 'timeout'; if (a === 'qr_blocked') return 'blocked'; if (a.includes('success')) return 'success'; if (a.includes('verify')) return 'verify'; if (a.includes('load')) return 'load'; return 'refresh'; }
   </script>
 

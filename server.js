@@ -15,6 +15,13 @@ app.use(compression());
 app.set('trust proxy', 1);
 
 const PORT = process.env.PORT || 3100;
+const PUBLIC_LOG_ACTIONS = new Set([
+  'page_load',
+  'qr_manual',
+  'qr_auto',
+  'qr_timeout',
+  'qr_blocked'
+]);
 const JWT_SECRET = process.env.JWT_SECRET || (() => {
   // 未设置环境变量时，从 data/.jwt_secret 读取或生成持久化密钥
   const keyFile = path.join(__dirname, 'data', '.jwt_secret');
@@ -171,7 +178,7 @@ app.use((req, res, next) => {
 
 // ===== CORS 配置 =====
 const allowedOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(',')
+  ? process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim()).filter(Boolean)
   : ['https://huihutong.xjtlu.uk'];
 
 app.use(cors({
@@ -233,30 +240,69 @@ const blacklistCheckLimiter = rateLimit({
 const loginAttempts = new Map();
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOGIN_LOCK_TIME = 15 * 60 * 1000;
+const LOGIN_ATTEMPT_TTL = 60 * 60 * 1000;
+const MAX_LOGIN_ATTEMPT_RECORDS = 5000;
 
-function checkLoginAttempts(username) {
-  const attempts = loginAttempts.get(username);
+function checkLoginAttempts(key) {
+  const attempts = loginAttempts.get(key);
+  if (!attempts) return { locked: false };
+  if (attempts.expiresAt && Date.now() >= attempts.expiresAt) {
+    loginAttempts.delete(key);
+    return { locked: false };
+  }
   if (attempts && attempts.count >= MAX_LOGIN_ATTEMPTS) {
     if (Date.now() < attempts.lockUntil) {
       const remaining = Math.ceil((attempts.lockUntil - Date.now()) / 1000 / 60);
       return { locked: true, remaining };
     }
-    loginAttempts.delete(username);
+    loginAttempts.delete(key);
   }
   return { locked: false };
 }
 
-function recordLoginFailure(username) {
-  const current = loginAttempts.get(username) || { count: 0 };
-  current.count++;
-  if (current.count >= MAX_LOGIN_ATTEMPTS) {
-    current.lockUntil = Date.now() + LOGIN_LOCK_TIME;
+function trimLoginAttempts() {
+  if (loginAttempts.size <= MAX_LOGIN_ATTEMPT_RECORDS) return;
+  let oldestKey = null;
+  let oldestAt = Infinity;
+  for (const [key, attempts] of loginAttempts.entries()) {
+    const candidate = attempts.updatedAt || 0;
+    if (candidate < oldestAt) {
+      oldestAt = candidate;
+      oldestKey = key;
+    }
   }
-  loginAttempts.set(username, current);
+  if (oldestKey) loginAttempts.delete(oldestKey);
 }
 
-function clearLoginAttempts(username) {
-  loginAttempts.delete(username);
+function recordLoginFailure(key) {
+  const now = Date.now();
+  const current = loginAttempts.get(key) || { count: 0 };
+  current.count++;
+  current.updatedAt = now;
+  current.expiresAt = now + LOGIN_ATTEMPT_TTL;
+  if (current.count >= MAX_LOGIN_ATTEMPTS) {
+    current.lockUntil = now + LOGIN_LOCK_TIME;
+  }
+  loginAttempts.set(key, current);
+  trimLoginAttempts();
+}
+
+function clearLoginAttempts(key) {
+  loginAttempts.delete(key);
+}
+
+function isValidUsername(username) {
+  return typeof username === 'string' && username.length >= 1 && username.length <= 64;
+}
+
+function isValidPassword(password) {
+  return typeof password === 'string' && password.length >= 1 && password.length <= 256;
+}
+
+function clampInteger(value, min, max, fallback) {
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isInteger(parsed)) return fallback;
+  return Math.min(Math.max(parsed, min), max);
 }
 
 // ===== 日志自动清除 =====
@@ -297,9 +343,9 @@ setInterval(() => {
 // 定期清理过期的登录尝试记录，防止 Map 无限累积
 setInterval(() => {
   const now = Date.now();
-  for (const [username, attempts] of loginAttempts.entries()) {
-    if (attempts.lockUntil && now > attempts.lockUntil) {
-      loginAttempts.delete(username);
+  for (const [key, attempts] of loginAttempts.entries()) {
+    if (attempts.expiresAt && now >= attempts.expiresAt) {
+      loginAttempts.delete(key);
     }
   }
 }, 60 * 60 * 1000);
@@ -310,6 +356,30 @@ setInterval(() => {
 // 不信任可被客户端伪造的 X-Forwarded-For，回退到 req.ip（经 trust proxy 处理的最近代理 IP）。
 function getClientIP(req) {
   return req.headers['cf-connecting-ip'] || req.ip;
+}
+
+function isTrustedRequestOrigin(req) {
+  const candidates = [req.headers.origin, req.headers.referer].filter(Boolean);
+  if (candidates.length === 0) return false;
+
+  return candidates.some((value) => {
+    try {
+      const requestOrigin = new URL(value).origin;
+      if (allowedOrigins.includes(requestOrigin)) return true;
+      if (process.env.NODE_ENV === 'development' && /https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(requestOrigin)) {
+        return true;
+      }
+    } catch {}
+    return false;
+  });
+}
+
+function requireTrustedAdminOrigin(req, res, next) {
+  if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) return next();
+  if (!isTrustedRequestOrigin(req)) {
+    return res.status(403).json({ error: '请求来源不受信任' });
+  }
+  return next();
 }
 
 function authMiddleware(req, res, next) {
@@ -377,6 +447,8 @@ function logAdminAction(username, action, ip) {
     .run(`admin:${username}`, action, ip);
 }
 
+app.use('/api/admin', requireTrustedAdminOrigin);
+
 // ===== 前端 API =====
 
 // 检查黑名单
@@ -396,71 +468,22 @@ app.post('/api/check-blacklist', blacklistCheckLimiter, (req, res) => {
 
 // 验证管理员 OpenID
 app.post('/api/verify-admin', generalLimiter, (req, res) => {
-  const { openId, password } = req.body;
-  const ip = getClientIP(req);
-  const userAgent = req.headers['user-agent'];
-
-  const configOpenId = db.prepare('SELECT value FROM config WHERE key = ?').get('admin_openid');
-  const configHash = db.prepare('SELECT value FROM config WHERE key = ?').get('admin_openid_hash');
-
-  if (!configOpenId || openId !== configOpenId.value) {
-    return res.json({ success: true, isAdmin: false });
-  }
-
-  const r1 = db.prepare('INSERT INTO access_logs (open_id, action, ip_address, user_agent) VALUES (?, ?, ?, ?)')
-    .run(openId, 'admin_verify_attempt', ip, userAgent);
-  fetchAndStoreGeo(ip, r1.lastInsertRowid).catch(() => {});
-
-  if (!configHash) {
-    return res.json({ success: true, isAdmin: true, verified: false });
-  }
-
-  const isValid = bcrypt.compareSync(password, configHash.value);
-
-  if (isValid) {
-    const r2 = db.prepare('INSERT INTO access_logs (open_id, action, ip_address, user_agent) VALUES (?, ?, ?, ?)')
-      .run(openId, 'admin_verify_success', ip, userAgent);
-    fetchAndStoreGeo(ip, r2.lastInsertRowid).catch(() => {});
-  }
-
-  return res.json({ success: true, isAdmin: true, verified: isValid });
+  return res.status(410).json({ success: false, error: '该接口已停用' });
 });
 
 // 检查是否为管理员
 app.post('/api/check-admin', generalLimiter, (req, res) => {
-  const { openId } = req.body;
-  const configOpenId = db.prepare('SELECT value FROM config WHERE key = ?').get('admin_openid');
-  return res.json({
-    success: true,
-    isAdmin: configOpenId && openId === configOpenId.value
-  });
+  return res.status(410).json({ success: false, error: '该接口已停用' });
 });
 
 // 记录/更新用户姓名和 userId
-app.post('/api/upsert-user', generalLimiter, (req, res) => {
-  const { openId, name, userId } = req.body;
-  if (!openId || typeof openId !== 'string' || openId.length > 128)
-    return res.json({ success: false });
-  const safeName   = (typeof name   === 'string' ? name   : '').substring(0, 32);
-  const safeUserId = (typeof userId === 'string' ? userId : '').substring(0, 64);
-  db.prepare(`
-    INSERT INTO users (open_id, user_id, name) VALUES (?, ?, ?)
-    ON CONFLICT(open_id) DO UPDATE SET
-      user_id    = excluded.user_id,
-      name       = excluded.name,
-      updated_at = datetime('now')
-  `).run(openId, safeUserId, safeName);
-  return res.json({ success: true });
+app.post('/api/upsert-user', authMiddleware, (req, res) => {
+  return res.status(403).json({ success: false, error: '公开写入已禁用' });
 });
 
 // 查询已存储的用户姓名（供有缓存 satoken 的老用户冷启动时使用）
-app.get('/api/user-name', generalLimiter, (req, res) => {
-  const { openId } = req.query;
-  if (!openId || typeof openId !== 'string' || openId.length > 128)
-    return res.json({ success: false, name: '' });
-  const row = db.prepare('SELECT name FROM users WHERE open_id = ?').get(openId);
-  res.setHeader('Cache-Control', 'no-store');
-  return res.json({ success: true, name: row?.name || '' });
+app.get('/api/user-name', authMiddleware, (req, res) => {
+  return res.status(403).json({ success: false, error: '公开查询已禁用', name: '' });
 });
 
 // 记录访问日志
@@ -469,6 +492,7 @@ app.post('/api/log-access', logLimiter, (req, res) => {
   if (!openId || !action) return res.json({ success: false });
   if (typeof openId !== 'string' || openId.length > 128) return res.status(400).json({ success: false });
   if (typeof action !== 'string' || action.length > 64) return res.status(400).json({ success: false });
+  if (!PUBLIC_LOG_ACTIONS.has(action)) return res.status(400).json({ success: false, error: '非法操作类型' });
   const ip = getClientIP(req);
   const userAgent = (req.headers['user-agent'] || '').substring(0, 512);
 
@@ -496,6 +520,9 @@ app.get('/api/version', generalLimiter, (req, res) => {
 
 app.post('/api/admin/login', loginLimiter, (req, res) => {
   const { username, password } = req.body;
+  if (!isValidUsername(username) || !isValidPassword(password)) {
+    return res.status(400).json({ error: '用户名或密码格式错误' });
+  }
 
   // 检查是否被锁定
   const lockStatus = checkLoginAttempts(username);
@@ -571,8 +598,8 @@ app.get('/api/admin/stats', authMiddleware, (req, res) => {
 
 // 获取日志
 app.get('/api/admin/logs', authMiddleware, (req, res) => {
-  const page = parseInt(req.query.page) || 1;
-  const limit = Math.min(parseInt(req.query.limit) || 50, 100);
+  const page = clampInteger(req.query.page, 1, 100000, 1);
+  const limit = clampInteger(req.query.limit, 1, 100, 50);
   const offset = (page - 1) * limit;
   const openIdFilter = req.query.openId || '';
   const actionFilter = req.query.action || '';
@@ -725,14 +752,7 @@ app.get('/api/admin/blacklist', authMiddleware, (req, res) => {
 
 // 管理员 OpenID 密码
 app.post('/api/admin/update-openid-password', authMiddleware, (req, res) => {
-  const { newPassword } = req.body;
-  if (!newPassword || newPassword.length < 8) {
-    return res.status(400).json({ error: '密码至少8位' });
-  }
-
-  const newHash = bcrypt.hashSync(newPassword, 10);
-  db.prepare(`INSERT INTO config (key, value) VALUES ('admin_openid_hash', ?) ON CONFLICT(key) DO UPDATE SET value = ?`).run(newHash, newHash);
-  return res.json({ success: true });
+  return res.status(410).json({ success: false, error: '该接口已停用' });
 });
 
 // 清理日志

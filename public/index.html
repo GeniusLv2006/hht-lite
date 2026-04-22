@@ -1411,20 +1411,6 @@
             });
         });
 
-        // 若姓名未缓存，提前从后端拉取（覆盖 satoken 已缓存但姓名未写入的老用户）
-        // 注意：不在此处调用 updateHeaderGreeting()，让 hideSplashScreen() 统一触发，确保计时从用户可见时开始
-        if (!userName && openId) {
-            fetch(`/api/user-name?openId=${encodeURIComponent(openId)}`)
-                .then(r => r.json())
-                .then(data => {
-                    if (data.name) {
-                        userName = data.name;
-                        localStorage.setItem(USER_NAME_KEY, data.name);
-                    }
-                })
-                .catch(() => {});
-        }
-
         function showSplashScreen() {
             splashScreen.style.display = 'flex';
             splashScreen.classList.remove('hidden');
@@ -1534,36 +1520,6 @@
             }
         }
 
-        // 检查是否为管理员 OpenID
-        async function checkAdminOpenId(inputOpenId) {
-            try {
-                const res = await fetch('/api/check-admin', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ openId: inputOpenId })
-                });
-                const data = await res.json();
-                return data.isAdmin;
-            } catch (error) {
-                return false;
-            }
-        }
-
-        // 验证管理员密码
-        async function verifyAdminPassword(inputOpenId, password) {
-            try {
-                const res = await fetch('/api/verify-admin', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ openId: inputOpenId, password })
-                });
-                const data = await res.json();
-                return data.verified;
-            } catch (error) {
-                return false;
-            }
-        }
-
         // 记录访问日志
         async function logAccess(action) {
             if (!openId) return;
@@ -1585,19 +1541,6 @@
             if (blacklistResult.blocked) {
                 showMessage((blacklistResult.ban_message || '此 OpenID 已被禁用') + (blacklistResult.reason ? '\n' + blacklistResult.reason : ''), 5000);
                 return;
-            }
-
-            // 检查是否为管理员 OpenID
-            const isAdmin = await checkAdminOpenId(newOpenId);
-            if (isAdmin) {
-                const password = await showInputDialog('此 ID 为管理员专用，请输入密码', '请输入密码', true);
-                if (password === null) return;
-
-                const verified = await verifyAdminPassword(newOpenId, password);
-                if (!verified) {
-                    showMessage('密码错误，请使用其它 ID');
-                    return;
-                }
             }
 
             openId = newOpenId;
@@ -1646,11 +1589,6 @@
                     userName = respName;
                     updateHeaderGreeting();
                 }
-                fetch('/api/upsert-user', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ openId, name: respName, userId: respUserId })
-                }).catch(() => {});
                 return 0;
             } catch (error) {
                 hideSplashScreen(); // OpenID 无效时先隐藏 splash，防止其遮挡输入框
@@ -2017,11 +1955,6 @@
                         userName = respName;
                         updateHeaderGreeting();
                     }
-                    fetch('/api/upsert-user', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ openId, name: respName, userId: respUserId })
-                    }).catch(() => {});
                 })
                 .catch(() => {})
             : null;
