@@ -1,7 +1,7 @@
 {
-  "name": "hht-backend",
+  "name": "hht-lite",
   "version": "1.0.0",
-  "description": "慧湖通极速版后端服务",
+  "description": "hht-lite 服务端",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

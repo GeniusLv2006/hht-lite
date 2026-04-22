@@ -22,8 +22,8 @@ https://huihutong.xjtlu.uk
 ### 1. 克隆仓库
 
 ```bash
-git clone https://github.com/GeniusLv2006/hht-web.git
-cd hht-web
+git clone https://github.com/GeniusLv2006/hht-lite.git
+cd hht-lite
 ```
 
 ### 2. 配置环境变量
