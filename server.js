@@ -464,11 +464,6 @@ async function fetchAndStoreGeo(ip, logId) {
   }
 }
 
-function logAdminAction(username, action, ip) {
-  db.prepare('INSERT INTO access_logs (open_id, action, ip_address) VALUES (?, ?, ?)')
-    .run(`admin:${username}`, action, ip);
-}
-
 app.use('/api/admin', requireTrustedAdminOrigin);
 
 // ===== 前端 API =====
@@ -580,8 +575,6 @@ app.post('/api/admin/change-password', authMiddleware, (req, res) => {
 
   const newHash = bcrypt.hashSync(newPassword, 10);
   db.prepare('UPDATE admin_users SET password_hash = ? WHERE id = ?').run(newHash, req.user.id);
-  logAdminAction(req.user.username, 'change_password', getClientIP(req));
-
   return res.json({ success: true });
 });
 
@@ -602,9 +595,9 @@ app.get('/api/admin/stats', authMiddleware, (req, res) => {
 
   const stats = db.prepare(`
     SELECT
-      (SELECT COUNT(*) FROM access_logs) as totalLogs,
-      (SELECT COUNT(DISTINCT open_id) FROM access_logs) as uniqueOpenIds,
-      (SELECT COUNT(*) FROM access_logs WHERE created_at >= :todayStart AND created_at < :tomorrowStart) as todayLogs,
+      (SELECT COUNT(*) FROM access_logs WHERE open_id NOT LIKE 'admin:%') as totalLogs,
+      (SELECT COUNT(DISTINCT open_id) FROM access_logs WHERE open_id NOT LIKE 'admin:%') as uniqueOpenIds,
+      (SELECT COUNT(*) FROM access_logs WHERE open_id NOT LIKE 'admin:%' AND created_at >= :todayStart AND created_at < :tomorrowStart) as todayLogs,
       (SELECT COUNT(*) FROM blacklist WHERE ${activeBlacklistCondition()}) as blockedCount
   `).get({ todayStart, tomorrowStart: tomorrowStartStr });
 
@@ -636,7 +629,7 @@ app.get('/api/admin/logs', authMiddleware, (req, res) => {
     LEFT JOIN users u ON l.open_id = u.open_id
   `;
   let countQuery = 'SELECT COUNT(*) as total FROM access_logs l';
-  const conditions = [];
+  const conditions = ["l.open_id NOT LIKE 'admin:%'"];
   const params = [];
 
   if (openIdFilter) {
@@ -701,6 +694,7 @@ app.get('/api/admin/users', authMiddleware, (req, res) => {
     FROM access_logs l
     LEFT JOIN openid_tags t ON l.open_id = t.open_id
     LEFT JOIN users u ON l.open_id = u.open_id
+    WHERE l.open_id NOT LIKE 'admin:%'
     ORDER BY last_active DESC
     LIMIT 500
   `).all();
@@ -755,14 +749,12 @@ app.post('/api/admin/blacklist/add', authMiddleware, (req, res) => {
       ban_message = excluded.ban_message,
       expires_at = excluded.expires_at
   `).run(openId, reason || '', ban_message || null, expiresAt);
-  logAdminAction(req.user.username, `blacklist_add:${openId}`, getClientIP(req));
   return res.json({ success: true });
 });
 
 app.post('/api/admin/blacklist/remove', authMiddleware, (req, res) => {
   const { openId } = req.body;
   db.prepare('DELETE FROM blacklist WHERE open_id = ?').run(openId);
-  logAdminAction(req.user.username, `blacklist_remove:${openId}`, getClientIP(req));
   return res.json({ success: true });
 });
 
@@ -797,7 +789,6 @@ app.post('/api/admin/clear-logs', authMiddleware, (req, res) => {
     `).run(daysToKeep);
   }
 
-  logAdminAction(req.user.username, clearAll ? 'clear_logs_all' : `clear_logs_days:${parseInt(days) || 7}`, getClientIP(req));
   return res.json({ success: true, deleted: result.changes });
 });
 
@@ -807,7 +798,6 @@ app.post('/api/admin/delete-user-logs', authMiddleware, (req, res) => {
   if (!openId) return res.status(400).json({ error: 'OpenID 不能为空' });
 
   const result = db.prepare('DELETE FROM access_logs WHERE open_id = ?').run(openId);
-  logAdminAction(req.user.username, `delete_user_logs:${openId}`, getClientIP(req));
   return res.json({ success: true, deleted: result.changes });
 });
 

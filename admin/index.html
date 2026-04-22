@@ -374,6 +374,13 @@
       max-width: 160px;
       color: var(--ink-2);
     }
+    .openid-meta-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+    }
     .ip-cell { font-size: 11px; color: var(--ink-2); }
     .ip-geo {
       font-size: 10px;
@@ -435,20 +442,24 @@
 
     /* User name subtitle */
     .user-name-sub {
+      display: inline-flex;
+      align-items: center;
       font-size: 11px;
       color: var(--ink-2);
-      margin-top: 1px;
+      line-height: 1.2;
     }
 
     /* Tag badge */
     .tag-badge {
+      display: inline-flex;
+      align-items: center;
       font-family: 'IBM Plex Mono', monospace;
       font-size: 10px;
       padding: 2px 6px;
       background: rgba(194,59,34,0.1);
       color: var(--accent);
       border: 1px solid rgba(194,59,34,0.2);
-      margin-left: 4px;
+      line-height: 1.2;
     }
     .blocked-badge {
       background: rgba(184,50,37,0.15);
@@ -742,7 +753,6 @@
               <option value="qr_auto">自动刷新</option>
               <option value="qr_timeout">生成超时</option>
               <option value="qr_blocked">已被拉黑</option>
-              <option value="admin_verify">管理员验证</option>
             </select>
             <select class="filter-select" id="filterDevice">
               <option value="">全部设备</option>
@@ -1360,20 +1370,27 @@
       return { name, detail, badge, browser };
     }
 
+    function renderOpenIdMeta(log, tagSafe) {
+      const items = [];
+      if (log.user_name) items.push(`<span class="user-name-sub">${escapeHtml(log.user_name)}</span>`);
+      if (log.tag) items.push(`<span class="tag-badge">${tagSafe}</span>`);
+      if (log.blocked_reason !== null) items.push('<span class="tag-badge blocked-badge">已拉黑</span>');
+      return items.length ? `<div class="openid-meta-row">${items.join('')}</div>` : '';
+    }
+
     function renderLogs(logs) {
       document.getElementById('logsTable').innerHTML = logs.map(log => {
         const device = parseDevice(log.user_agent);
         const openIdSafe = escapeHtml(log.open_id);
         const tagSafe = escapeHtml(log.tag);
         const actionLabel = escapeHtml(formatAction(log.action));
+        const openIdMeta = renderOpenIdMeta(log, tagSafe);
         return `
         <tr>
           <td style="white-space:nowrap;">${formatDate(log.created_at)}</td>
           <td>
             <div class="openid-cell">${openIdSafe}</div>
-            ${log.user_name ? `<div class="user-name-sub">${escapeHtml(log.user_name)}</div>` : ''}
-            ${log.tag ? `<span class="tag-badge">${tagSafe}</span>` : ''}
-            ${log.blocked_reason !== null ? `<span class="tag-badge blocked-badge">已拉黑</span>` : ''}
+            ${openIdMeta}
           </td>
           <td><span class="action-badge ${getActionClass(log.action)}">${actionLabel}</span></td>
           <td>
@@ -1405,6 +1422,7 @@
         const openIdSafe = escapeHtml(log.open_id);
         const tagSafe = escapeHtml(log.tag);
         const actionLabel = escapeHtml(formatAction(log.action));
+        const openIdMeta = renderOpenIdMeta(log, tagSafe);
         return `
         <div class="log-card">
           <div class="log-card-header">
@@ -1413,9 +1431,7 @@
           </div>
           <div class="log-card-openid">
             ${openIdSafe}
-            ${log.user_name ? `<div class="user-name-sub">${escapeHtml(log.user_name)}</div>` : ''}
-            ${log.tag ? `<span class="tag-badge">${tagSafe}</span>` : ''}
-            ${log.blocked_reason !== null ? `<span class="tag-badge blocked-badge">已拉黑</span>` : ''}
+            ${openIdMeta}
           </div>
           <div class="device-info">
             <span class="device-badge ${escapeHtml(device.badge)}">${escapeHtml(device.name)}</span>
@@ -1572,7 +1588,7 @@
 
     function formatDate(d) { return new Date(d + 'Z').toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }); }
     function formatShortDate(d) { return new Date(d + 'Z').toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }); }
-    function formatAction(a) { var m = { 'qr_manual': '手动刷新', 'qr_auto': '自动刷新', 'qr_timeout': '生成超时', 'qr_blocked': '已被拉黑', 'page_load': '页面加载', 'admin_verify_attempt': '管理员验证', 'admin_verify_success': '验证成功' }; return m[a] || '未知操作'; }
+    function formatAction(a) { var m = { 'qr_manual': '手动刷新', 'qr_auto': '自动刷新', 'qr_timeout': '生成超时', 'qr_blocked': '已被拉黑', 'page_load': '页面加载' }; return m[a] || '未知操作'; }
     function getActionClass(a) { if (a === 'qr_manual') return 'manual'; if (a === 'qr_auto') return 'auto'; if (a === 'qr_timeout') return 'timeout'; if (a === 'qr_blocked') return 'blocked'; if (a.includes('success')) return 'success'; if (a.includes('verify')) return 'verify'; if (a.includes('load')) return 'load'; return 'refresh'; }
   </script>
 
