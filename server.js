@@ -43,6 +43,7 @@ const JWT_SECRET = process.env.JWT_SECRET || (() => {
 })();
 const LOG_RETENTION_DAYS = parseInt(process.env.LOG_RETENTION_DAYS) || 30;
 const ADMIN_OPENID = process.env.ADMIN_OPENID || '';
+const SHANGHAI_OFFSET = '+08:00';
 
 // 初始化数据库
 const db = new Database(path.join(__dirname, 'data', 'hht.db'));
@@ -358,6 +359,27 @@ function getClientIP(req) {
   return req.headers['cf-connecting-ip'] || req.ip;
 }
 
+function toSqliteUtc(date) {
+  return date.toISOString().replace('T', ' ').substring(0, 19);
+}
+
+function parseAdminDateTime(value) {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  const normalized = trimmed.includes(' ') && !trimmed.includes('T')
+    ? trimmed.replace(' ', 'T')
+    : trimmed;
+  const hasTimezone = /(?:Z|[+-]\d{2}:\d{2})$/.test(normalized);
+  const date = new Date(hasTimezone ? normalized : `${normalized}${SHANGHAI_OFFSET}`);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function activeBlacklistCondition(column = 'expires_at') {
+  return `(${column} IS NULL OR ${column} > datetime('now'))`;
+}
+
 function isTrustedRequestOrigin(req) {
   const candidates = [req.headers.origin, req.headers.referer].filter(Boolean);
   if (candidates.length === 0) return false;
@@ -456,7 +478,7 @@ app.post('/api/check-blacklist', blacklistCheckLimiter, (req, res) => {
   const { openId } = req.body;
   if (!openId || typeof openId !== 'string' || openId.length > 128) return res.json({ success: true, blocked: false });
   const blocked = db.prepare(
-    "SELECT reason, ban_message FROM blacklist WHERE open_id = ? AND (expires_at IS NULL OR expires_at > datetime('now'))"
+    `SELECT reason, ban_message FROM blacklist WHERE open_id = ? AND ${activeBlacklistCondition()}`
   ).get(openId);
   return res.json({
     success: true,
@@ -574,17 +596,16 @@ app.post('/api/admin/logout', (req, res) => {
 // 获取统计（优化：合并查询）
 app.get('/api/admin/stats', authMiddleware, (req, res) => {
   const todayCST = new Date(Date.now() + 8 * 3600 * 1000).toISOString().substring(0, 10);
-  const todayStart = new Date(todayCST + 'T00:00:00+08:00').toISOString().replace('T', ' ').substring(0, 19);
-  const tomorrowStart = new Date(todayCST + 'T00:00:00+08:00');
-  tomorrowStart.setDate(tomorrowStart.getDate() + 1);
-  const tomorrowStartStr = tomorrowStart.toISOString().replace('T', ' ').substring(0, 19);
+  const todayStart = toSqliteUtc(new Date(todayCST + `T00:00:00${SHANGHAI_OFFSET}`));
+  const tomorrowStart = new Date(new Date(todayCST + `T00:00:00${SHANGHAI_OFFSET}`).getTime() + 24 * 3600 * 1000);
+  const tomorrowStartStr = toSqliteUtc(tomorrowStart);
 
   const stats = db.prepare(`
     SELECT
       (SELECT COUNT(*) FROM access_logs) as totalLogs,
       (SELECT COUNT(DISTINCT open_id) FROM access_logs) as uniqueOpenIds,
       (SELECT COUNT(*) FROM access_logs WHERE created_at >= :todayStart AND created_at < :tomorrowStart) as todayLogs,
-      (SELECT COUNT(*) FROM blacklist) as blockedCount
+      (SELECT COUNT(*) FROM blacklist WHERE ${activeBlacklistCondition()}) as blockedCount
   `).get({ todayStart, tomorrowStart: tomorrowStartStr });
 
   const retentionConfig = db.prepare('SELECT value FROM config WHERE key = ?').get('log_retention_days');
@@ -611,7 +632,7 @@ app.get('/api/admin/logs', authMiddleware, (req, res) => {
     SELECT l.*, t.tag, b.reason as blocked_reason, u.name as user_name, u.user_id
     FROM access_logs l
     LEFT JOIN openid_tags t ON l.open_id = t.open_id
-    LEFT JOIN blacklist b ON l.open_id = b.open_id
+    LEFT JOIN blacklist b ON l.open_id = b.open_id AND ${activeBlacklistCondition('b.expires_at')}
     LEFT JOIN users u ON l.open_id = u.open_id
   `;
   let countQuery = 'SELECT COUNT(*) as total FROM access_logs l';
@@ -645,12 +666,12 @@ app.get('/api/admin/logs', authMiddleware, (req, res) => {
 
   if (startDate) {
     conditions.push('l.created_at >= ?');
-    params.push(new Date(startDate + 'T00:00:00+08:00').toISOString().replace('T', ' ').substring(0, 19));
+    params.push(toSqliteUtc(new Date(startDate + `T00:00:00${SHANGHAI_OFFSET}`)));
   }
 
   if (endDate) {
     conditions.push('l.created_at <= ?');
-    params.push(new Date(endDate + 'T23:59:59+08:00').toISOString().replace('T', ' ').substring(0, 19));
+    params.push(toSqliteUtc(new Date(endDate + `T23:59:59${SHANGHAI_OFFSET}`)));
   }
 
   if (conditions.length > 0) {
@@ -721,14 +742,19 @@ app.post('/api/admin/blacklist/add', authMiddleware, (req, res) => {
 
   let expiresAt = null;
   if (expires_at) {
-    // 若不含时区信息（datetime-local 原始值），视为 CST（UTC+8）
-    const hasTimezone = /Z$|[+-]\d{2}:\d{2}$/.test(expires_at);
-    const d = new Date(hasTimezone ? expires_at : expires_at + '+08:00');
-    if (isNaN(d.getTime()) || d <= new Date()) return res.status(400).json({ error: '解封时间必须是未来时间' });
-    expiresAt = d.toISOString().replace('T', ' ').substring(0, 19);
+    const d = parseAdminDateTime(expires_at);
+    if (!d || d <= new Date()) return res.status(400).json({ error: '解封时间必须是未来时间' });
+    expiresAt = toSqliteUtc(d);
   }
 
-  db.prepare('INSERT OR REPLACE INTO blacklist (open_id, reason, ban_message, expires_at) VALUES (?, ?, ?, ?)').run(openId, reason || '', ban_message || null, expiresAt);
+  db.prepare(`
+    INSERT INTO blacklist (open_id, reason, ban_message, expires_at)
+    VALUES (?, ?, ?, ?)
+    ON CONFLICT(open_id) DO UPDATE SET
+      reason = excluded.reason,
+      ban_message = excluded.ban_message,
+      expires_at = excluded.expires_at
+  `).run(openId, reason || '', ban_message || null, expiresAt);
   logAdminAction(req.user.username, `blacklist_add:${openId}`, getClientIP(req));
   return res.json({ success: true });
 });
@@ -745,6 +771,7 @@ app.get('/api/admin/blacklist', authMiddleware, (req, res) => {
     SELECT b.*, t.tag
     FROM blacklist b
     LEFT JOIN openid_tags t ON b.open_id = t.open_id
+    WHERE ${activeBlacklistCondition('b.expires_at')}
     ORDER BY b.created_at DESC
   `).all();
   return res.json({ success: true, data: list });

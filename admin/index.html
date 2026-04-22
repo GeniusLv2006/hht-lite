@@ -891,7 +891,7 @@
           <input type="text" id="blockBanMessage" placeholder="此 OpenID 已被禁用" maxlength="100">
         </div>
         <div class="form-group">
-          <label>自动解封时间（留空为永久封禁）</label>
+          <label>自动解封时间（北京时间，留空为永久封禁）</label>
           <input type="datetime-local" id="blockExpiresAt">
         </div>
         <div class="modal-actions">
@@ -1059,7 +1059,7 @@
             openId: document.getElementById('blockOpenId').value,
             reason: document.getElementById('blockReason').value,
             ban_message: document.getElementById('blockBanMessage').value || null,
-            expires_at: expiresAt ? new Date(expiresAt).toISOString() : null
+            expires_at: expiresAt || null
           })
         });
         const data = await res.json();
