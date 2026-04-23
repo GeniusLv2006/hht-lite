@@ -628,6 +628,12 @@
       gap: 8px;
       flex-wrap: wrap;
     }
+    .pagination-size {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
     .pagination-jump label {
       font-family: 'IBM Plex Mono', monospace;
       font-size: 11px;
@@ -660,6 +666,28 @@
       transition: border-color 0.12s;
     }
     .pagination-jump button:hover { border-color: var(--line); }
+    .pagination-size select {
+      min-width: 84px;
+      padding: 6px 28px 6px 8px;
+      background: var(--bg-2);
+      border: 1px solid var(--line-faint);
+      color: var(--ink);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      outline: none;
+      border-radius: 0;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image:
+        linear-gradient(45deg, transparent 50%, var(--ink-2) 50%),
+        linear-gradient(135deg, var(--ink-2) 50%, transparent 50%);
+      background-position:
+        calc(100% - 15px) calc(50% - 2px),
+        calc(100% - 10px) calc(50% - 2px);
+      background-size: 5px 5px, 5px 5px;
+      background-repeat: no-repeat;
+    }
+    .pagination-size select:focus { border-color: var(--accent); }
     .page-info {
       font-family: 'IBM Plex Mono', monospace;
       font-size: 11px;
@@ -902,6 +930,15 @@
         <div class="pagination-wrapper">
           <div class="pagination-nav" id="paginationNav"></div>
           <div class="pagination-jump">
+            <div class="pagination-size">
+              <label for="pageSizeSelect">每页</label>
+              <select id="pageSizeSelect">
+                <option value="10">10 条</option>
+                <option value="20" selected>20 条</option>
+                <option value="50">50 条</option>
+                <option value="100">100 条</option>
+              </select>
+            </div>
             <div style="display:flex;align-items:center;gap:6px;">
               <label>跳至</label>
               <input type="number" id="jumpPageInput" min="1" value="1">
@@ -1110,6 +1147,10 @@
     let currentPage = 1;
     let totalPages = 1;
     let totalRecords = 0;
+    const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
+    let currentPageSize = PAGE_SIZE_OPTIONS.includes(parseInt(localStorage.getItem('adminPageSize'), 10))
+      ? parseInt(localStorage.getItem('adminPageSize'), 10)
+      : 20;
     let currentFilters = { openId: '', action: '', device: '', startDate: '', endDate: '' };
 
     // Cookie 由服务端管理；adminLoggedIn 可读 Cookie 存在时验证后展示后台
@@ -1127,6 +1168,14 @@
         e.preventDefault();
         jumpToPage();
       }
+    });
+    document.getElementById('pageSizeSelect').value = String(currentPageSize);
+    document.getElementById('pageSizeSelect').addEventListener('change', function(e) {
+      const nextSize = parseInt(e.target.value, 10);
+      currentPageSize = PAGE_SIZE_OPTIONS.includes(nextSize) ? nextSize : 20;
+      localStorage.setItem('adminPageSize', String(currentPageSize));
+      currentPage = 1;
+      loadLogs();
     });
 
     document.getElementById('loginForm').addEventListener('submit', async (e) => {
@@ -1399,7 +1448,7 @@
 
     async function loadLogs() {
       try {
-        const params = new URLSearchParams({ page: currentPage, limit: 20 });
+        const params = new URLSearchParams({ page: currentPage, limit: currentPageSize });
         if (currentFilters.openId) params.append('openId', currentFilters.openId);
         if (currentFilters.action) params.append('action', currentFilters.action);
         if (currentFilters.device) params.append('device', currentFilters.device);
@@ -1617,9 +1666,10 @@
       document.getElementById('paginationNav').innerHTML = html;
 
       // 更新跳转输入框
+      document.getElementById('pageSizeSelect').value = String(p.limit || currentPageSize);
       document.getElementById('jumpPageInput').value = p.page;
       document.getElementById('jumpPageInput').max = p.totalPages;
-      document.getElementById('pageInfo').textContent = `第 ${p.page} 页，共 ${p.totalPages} 页，共 ${p.total} 条记录`;
+      document.getElementById('pageInfo').textContent = `第 ${p.page} 页，共 ${p.totalPages} 页，共 ${p.total} 条记录，每页 ${p.limit || currentPageSize} 条`;
     }
 
     function jumpToPage() {
