@@ -20,6 +20,7 @@
       --accent:     #c23b22;
       --line:       rgba(26,26,26,0.82);
       --line-faint: rgba(26,26,26,0.11);
+      --table-head-divider: rgba(26,26,26,0.16);
       --danger:     #b83225;
     }
     body.dark-mode {
@@ -30,6 +31,7 @@
       --accent:     #e05a3a;
       --line:       rgba(232,228,221,0.78);
       --line-faint: rgba(232,228,221,0.09);
+      --table-head-divider: rgba(232,228,221,0.14);
       --danger:     #e05a3a;
     }
 
@@ -343,17 +345,73 @@
     }
 
     /* Table */
-    .table-wrapper { overflow-x: auto; }
-    @media (max-width: 768px) { .table-wrapper { display: none; } }
+    .table-scroll-shell {
+      --sticky-col-width: 140px;
+      position: relative;
+      isolation: isolate;
+    }
+    .table-scroll-shell::before,
+    .table-scroll-shell::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      bottom: 8px;
+      width: 34px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.16s ease;
+      z-index: 8;
+    }
+    .table-scroll-shell::before {
+      left: var(--sticky-col-width);
+      background: linear-gradient(90deg, var(--bg) 0%, rgba(232,228,221,0) 100%);
+    }
+    .table-scroll-shell::after {
+      right: 0;
+      background: linear-gradient(270deg, var(--bg) 0%, rgba(232,228,221,0) 100%);
+    }
+    body.dark-mode .table-scroll-shell::before {
+      background: linear-gradient(90deg, var(--bg) 0%, rgba(17,17,16,0) 100%);
+    }
+    body.dark-mode .table-scroll-shell::after {
+      background: linear-gradient(270deg, var(--bg) 0%, rgba(17,17,16,0) 100%);
+    }
+    .table-scroll-shell.is-scrollable:not(.is-scroll-start)::before { opacity: 1; }
+    .table-scroll-shell.is-scrollable:not(.is-scroll-end)::after { opacity: 1; }
 
-    table { border-collapse: collapse; width: 100%; }
-    thead { border-bottom: 2px solid var(--line); }
+    .table-wrapper {
+      overflow-x: auto;
+      overflow-y: auto;
+      max-height: min(68vh, 760px);
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;
+      scrollbar-color: var(--line-faint) transparent;
+    }
+    .table-wrapper::-webkit-scrollbar { height: 8px; }
+    .table-wrapper::-webkit-scrollbar-track { background: transparent; }
+    .table-wrapper::-webkit-scrollbar-thumb {
+      background: var(--line-faint);
+      border-radius: 999px;
+    }
+
+    table {
+      border-collapse: separate;
+      border-spacing: 0;
+      width: 100%;
+      min-width: 1080px;
+    }
+    thead { border-bottom: 1px solid var(--table-head-divider); }
     th {
-      padding: 10px 12px;
+      position: sticky;
+      top: 0;
+      z-index: 4;
+      padding: 12px 12px 11px;
       text-align: left;
       font-family: 'IBM Plex Mono', monospace;
       font-size: 10px;
       font-weight: 500;
+      background: var(--bg);
       color: var(--ink-2);
       text-transform: uppercase;
       letter-spacing: 0.1em;
@@ -364,14 +422,17 @@
       font-family: 'IBM Plex Mono', monospace;
       font-size: 12px;
       border-bottom: 1px solid var(--line-faint);
+      background: var(--bg);
       vertical-align: top;
     }
     tr:hover td { background: var(--bg-2); }
 
     .openid-cell {
+      display: inline-block;
       font-size: 11px;
-      word-break: break-all;
-      max-width: 160px;
+      white-space: nowrap;
+      word-break: normal;
+      min-width: max-content;
       color: var(--ink-2);
     }
     .openid-meta-row {
@@ -389,6 +450,21 @@
       opacity: 0.75;
     }
     .actions-cell { white-space: nowrap; }
+    .table-time-col {
+      min-width: 140px;
+      position: sticky;
+      left: 0;
+      z-index: 3;
+      box-shadow: 1px 0 0 var(--line-faint);
+    }
+    thead .table-time-col {
+      z-index: 6;
+    }
+    .table-openid-col { min-width: 280px; }
+    .table-action-col { min-width: 110px; }
+    .table-device-col { min-width: 180px; }
+    .table-ip-col { min-width: 220px; }
+    .table-actions-col { min-width: 170px; }
 
     /* Action badges */
     .action-badge {
@@ -469,9 +545,6 @@
 
     /* ══ MOBILE LOG CARDS ══ */
     .log-cards { display: none; }
-    @media (max-width: 768px) {
-      .log-cards { display: block; }
-    }
     .log-card {
       padding: 14px 16px;
       border-bottom: 1px solid var(--line-faint);
@@ -492,7 +565,9 @@
       font-family: 'IBM Plex Mono', monospace;
       font-size: 11px;
       color: var(--ink-2);
-      word-break: break-all;
+      white-space: nowrap;
+      overflow-x: auto;
+      overflow-y: hidden;
       margin-bottom: 6px;
     }
     .log-card-ip {
@@ -589,6 +664,35 @@
       font-family: 'IBM Plex Mono', monospace;
       font-size: 11px;
       color: var(--ink-2);
+    }
+
+    @media (max-width: 768px) {
+      .content {
+        padding: 16px 12px 20px;
+      }
+      .card-header {
+        padding: 14px 12px;
+      }
+      table {
+        min-width: 980px;
+      }
+      .table-wrapper {
+        max-height: calc(100vh - 260px);
+      }
+      th {
+        padding: 11px 10px 10px;
+      }
+      td {
+        padding: 10px;
+      }
+      .pagination-wrapper {
+        padding: 12px;
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .pagination-jump {
+        justify-content: space-between;
+      }
     }
 
     /* ══ LIST ITEMS (users/blacklist modals) ══ */
@@ -773,20 +877,22 @@
         </div>
 
         <!-- 桌面端表格 -->
-        <div class="table-wrapper">
-          <table>
-            <thead>
-              <tr>
-                <th style="width:120px;">时间</th>
-                <th style="width:180px;">OpenID</th>
-                <th style="width:80px;">操作</th>
-                <th style="width:140px;">设备</th>
-                <th style="width:170px;">IP</th>
-                <th style="width:90px;">管理</th>
-              </tr>
-            </thead>
-            <tbody id="logsTable"></tbody>
-          </table>
+        <div class="table-scroll-shell is-scroll-start is-scroll-end" id="logsTableShell">
+          <div class="table-wrapper" id="logsTableWrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th class="table-time-col">时间</th>
+                  <th class="table-openid-col">OpenID</th>
+                  <th class="table-action-col">操作</th>
+                  <th class="table-device-col">设备</th>
+                  <th class="table-ip-col">IP</th>
+                  <th class="table-actions-col">管理</th>
+                </tr>
+              </thead>
+              <tbody id="logsTable"></tbody>
+            </table>
+          </div>
         </div>
 
         <!-- 移动端卡片 -->
@@ -1103,6 +1209,29 @@
     document.getElementById('usersList').addEventListener('click', handleActionClick);
     // ──────────────────────────────────────────────────────────────────────────────
 
+    function updateTableScrollHints() {
+      const wrapper = document.getElementById('logsTableWrapper');
+      const shell = document.getElementById('logsTableShell');
+      if (!wrapper || !shell) return;
+      const maxScroll = wrapper.scrollWidth - wrapper.clientWidth;
+      const isScrollable = maxScroll > 1;
+      shell.classList.toggle('is-scrollable', isScrollable);
+      shell.classList.toggle('is-scroll-start', !isScrollable || wrapper.scrollLeft <= 1);
+      shell.classList.toggle('is-scroll-end', !isScrollable || wrapper.scrollLeft >= maxScroll - 1);
+    }
+
+    function setupTableScrollHints() {
+      const wrapper = document.getElementById('logsTableWrapper');
+      if (!wrapper) return;
+      wrapper.addEventListener('scroll', updateTableScrollHints, { passive: true });
+      window.addEventListener('resize', updateTableScrollHints);
+      if ('ResizeObserver' in window) {
+        new ResizeObserver(updateTableScrollHints).observe(wrapper);
+      }
+      updateTableScrollHints();
+    }
+    setupTableScrollHints();
+
     function showModal(id) { document.getElementById(id).style.display = 'flex'; }
     function hideModal(id) { document.getElementById(id).style.display = 'none'; }
     function showChangePasswordModal() { showModal('changePasswordModal'); }
@@ -1388,13 +1517,13 @@
         const openIdMeta = renderOpenIdMeta(log, tagSafe);
         return `
         <tr>
-          <td style="white-space:nowrap;">${formatDate(log.created_at)}</td>
-          <td>
+          <td class="table-time-col" style="white-space:nowrap;">${formatDate(log.created_at)}</td>
+          <td class="table-openid-col">
             <div class="openid-cell">${openIdSafe}</div>
             ${openIdMeta}
           </td>
-          <td><span class="action-badge ${getActionClass(log.action)}">${actionLabel}</span></td>
-          <td>
+          <td class="table-action-col"><span class="action-badge ${getActionClass(log.action)}">${actionLabel}</span></td>
+          <td class="table-device-col">
             <div class="device-info">
               <div class="device-main">
                 <span class="device-badge ${escapeHtml(device.badge)}">${escapeHtml(device.name)}</span>
@@ -1403,11 +1532,11 @@
               ${device.detail ? `<div class="device-detail">${escapeHtml(device.detail)}</div>` : ''}
             </div>
           </td>
-          <td class="ip-cell">
+          <td class="ip-cell table-ip-col">
             ${escapeHtml(log.ip_address) || '-'}
             ${log.ip_geo ? `<div class="ip-geo">${escapeHtml(log.ip_geo)}</div>` : ''}
           </td>
-          <td class="actions-cell">
+          <td class="actions-cell table-actions-col">
             <button class="btn-tag" data-action="tag" data-openid="${openIdSafe}" data-tag="${tagSafe}">标签</button><button class="btn-delete" data-action="delete" data-openid="${openIdSafe}">删除</button>
             ${log.blocked_reason !== null
               ? `<button class="btn-unblock" data-action="unblock" data-openid="${openIdSafe}">解黑</button>`
@@ -1415,6 +1544,7 @@
           </td>
         </tr>
       `}).join('');
+      requestAnimationFrame(updateTableScrollHints);
     }
 
     function renderLogCards(logs) {
