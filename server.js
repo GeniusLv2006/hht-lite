@@ -98,6 +98,8 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_access_logs_created_at ON access_logs(created_at);
   CREATE INDEX IF NOT EXISTS idx_access_logs_open_id_created_at ON access_logs(open_id, created_at);
   CREATE INDEX IF NOT EXISTS idx_access_logs_action ON access_logs(action);
+  CREATE INDEX IF NOT EXISTS idx_openid_tags_tag ON openid_tags(tag);
+  CREATE INDEX IF NOT EXISTS idx_users_name ON users(name);
 
   CREATE TABLE IF NOT EXISTS notification (
     id INTEGER PRIMARY KEY CHECK (id = 1),
@@ -380,6 +382,131 @@ function activeBlacklistCondition(column = 'expires_at') {
   return `(${column} IS NULL OR ${column} > datetime('now'))`;
 }
 
+function normalizeAdminLogFilters(source = {}) {
+  const normalized = {
+    openId: typeof source.openId === 'string' ? source.openId.trim() : '',
+    userName: typeof source.userName === 'string' ? source.userName.trim() : '',
+    tag: typeof source.tag === 'string' ? source.tag.trim() : '',
+    action: typeof source.action === 'string' ? source.action.trim() : '',
+    device: typeof source.device === 'string' ? source.device.trim() : '',
+    blocked: typeof source.blocked === 'string' ? source.blocked.trim() : '',
+    startDate: typeof source.startDate === 'string' ? source.startDate.trim() : '',
+    endDate: typeof source.endDate === 'string' ? source.endDate.trim() : ''
+  };
+
+  if (!['', 'blocked', 'normal'].includes(normalized.blocked)) normalized.blocked = '';
+  if (normalized.startDate && normalized.endDate && normalized.startDate > normalized.endDate) {
+    const temp = normalized.startDate;
+    normalized.startDate = normalized.endDate;
+    normalized.endDate = temp;
+  }
+  return normalized;
+}
+
+function hasActiveAdminLogFilters(filters) {
+  return Object.values(filters).some(Boolean);
+}
+
+function buildAdminLogFilterParts(rawFilters = {}) {
+  const filters = normalizeAdminLogFilters(rawFilters);
+  const joinedTables = `
+    FROM access_logs l
+    LEFT JOIN openid_tags t ON l.open_id = t.open_id
+    LEFT JOIN blacklist b ON l.open_id = b.open_id AND ${activeBlacklistCondition('b.expires_at')}
+    LEFT JOIN users u ON l.open_id = u.open_id
+  `;
+  const conditions = ["l.open_id NOT LIKE 'admin:%'"];
+  const params = [];
+
+  if (filters.openId) {
+    conditions.push('l.open_id LIKE ?');
+    params.push(`%${filters.openId}%`);
+  }
+
+  if (filters.userName) {
+    conditions.push('u.name LIKE ?');
+    params.push(`%${filters.userName}%`);
+  }
+
+  if (filters.tag) {
+    conditions.push('t.tag LIKE ?');
+    params.push(`%${filters.tag}%`);
+  }
+
+  if (filters.action === 'admin_verify') {
+    conditions.push("(l.action = 'admin_verify_attempt' OR l.action = 'admin_verify_success')");
+  } else if (filters.action) {
+    conditions.push('l.action = ?');
+    params.push(filters.action);
+  }
+
+  if (filters.device) {
+    const devicePatterns = {
+      'iphone': '%iPhone%',
+      'ipad': '%iPad%',
+      'android': '%Android%',
+      'mac': '%Mac OS X%',
+      'windows': '%Windows%',
+      'wechat': '%MicroMessenger%'
+    };
+    if (devicePatterns[filters.device]) {
+      conditions.push('l.user_agent LIKE ?');
+      params.push(devicePatterns[filters.device]);
+    }
+  }
+
+  if (filters.blocked === 'blocked') {
+    conditions.push('b.open_id IS NOT NULL');
+  } else if (filters.blocked === 'normal') {
+    conditions.push('b.open_id IS NULL');
+  }
+
+  if (filters.startDate) {
+    conditions.push('l.created_at >= ?');
+    params.push(toSqliteUtc(new Date(filters.startDate + `T00:00:00${SHANGHAI_OFFSET}`)));
+  }
+
+  if (filters.endDate) {
+    const endBoundary = new Date(filters.endDate + `T00:00:00${SHANGHAI_OFFSET}`);
+    endBoundary.setDate(endBoundary.getDate() + 1);
+    conditions.push('l.created_at < ?');
+    params.push(toSqliteUtc(endBoundary));
+  }
+
+  return {
+    filters,
+    joinedTables,
+    whereClause: conditions.length > 0 ? ` WHERE ${conditions.join(' AND ')}` : '',
+    params
+  };
+}
+
+function normalizeLogIds(input) {
+  if (!Array.isArray(input)) return [];
+  return [...new Set(input
+    .map((value) => Number.parseInt(value, 10))
+    .filter((value) => Number.isInteger(value) && value > 0))];
+}
+
+function deleteAccessLogsByIds(ids) {
+  const normalizedIds = normalizeLogIds(ids);
+  if (normalizedIds.length === 0) return 0;
+
+  const chunkSize = 300;
+  const runDelete = db.transaction((allIds) => {
+    let deleted = 0;
+    for (let index = 0; index < allIds.length; index += chunkSize) {
+      const chunk = allIds.slice(index, index + chunkSize);
+      const placeholders = chunk.map(() => '?').join(', ');
+      const result = db.prepare(`DELETE FROM access_logs WHERE id IN (${placeholders})`).run(...chunk);
+      deleted += result.changes;
+    }
+    return deleted;
+  });
+
+  return runDelete(normalizedIds);
+}
+
 function isTrustedRequestOrigin(req) {
   const candidates = [req.headers.origin, req.headers.referer].filter(Boolean);
   if (candidates.length === 0) return false;
@@ -615,63 +742,14 @@ app.get('/api/admin/logs', authMiddleware, (req, res) => {
   const page = clampInteger(req.query.page, 1, 100000, 1);
   const limit = clampInteger(req.query.limit, 1, 100, 50);
   const offset = (page - 1) * limit;
-  const openIdFilter = req.query.openId || '';
-  const actionFilter = req.query.action || '';
-  const deviceFilter = req.query.device || '';
-  const startDate = req.query.startDate || '';
-  const endDate = req.query.endDate || '';
-
+  const { joinedTables, whereClause, params } = buildAdminLogFilterParts(req.query);
   let query = `
     SELECT l.*, t.tag, b.reason as blocked_reason, u.name as user_name, u.user_id
-    FROM access_logs l
-    LEFT JOIN openid_tags t ON l.open_id = t.open_id
-    LEFT JOIN blacklist b ON l.open_id = b.open_id AND ${activeBlacklistCondition('b.expires_at')}
-    LEFT JOIN users u ON l.open_id = u.open_id
+    ${joinedTables}
   `;
-  let countQuery = 'SELECT COUNT(*) as total FROM access_logs l';
-  const conditions = ["l.open_id NOT LIKE 'admin:%'"];
-  const params = [];
-
-  if (openIdFilter) {
-    conditions.push('l.open_id LIKE ?');
-    params.push(`%${openIdFilter}%`);
-  }
-
-  if (actionFilter) {
-    conditions.push('l.action LIKE ?');
-    params.push(`%${actionFilter}%`);
-  }
-
-  if (deviceFilter) {
-    const devicePatterns = {
-      'iphone': '%iPhone%',
-      'ipad': '%iPad%',
-      'android': '%Android%',
-      'mac': '%Mac OS X%',
-      'windows': '%Windows%',
-      'wechat': '%MicroMessenger%'
-    };
-    if (devicePatterns[deviceFilter]) {
-      conditions.push('l.user_agent LIKE ?');
-      params.push(devicePatterns[deviceFilter]);
-    }
-  }
-
-  if (startDate) {
-    conditions.push('l.created_at >= ?');
-    params.push(toSqliteUtc(new Date(startDate + `T00:00:00${SHANGHAI_OFFSET}`)));
-  }
-
-  if (endDate) {
-    conditions.push('l.created_at <= ?');
-    params.push(toSqliteUtc(new Date(endDate + `T23:59:59${SHANGHAI_OFFSET}`)));
-  }
-
-  if (conditions.length > 0) {
-    const whereClause = ' WHERE ' + conditions.join(' AND ');
-    query += whereClause;
-    countQuery += whereClause;
-  }
+  let countQuery = `SELECT COUNT(*) as total ${joinedTables}`;
+  query += whereClause;
+  countQuery += whereClause;
 
   query += ' ORDER BY l.created_at DESC LIMIT ? OFFSET ?';
 
@@ -794,11 +872,38 @@ app.post('/api/admin/clear-logs', authMiddleware, (req, res) => {
 
 // 删除用户日志
 app.post('/api/admin/delete-user-logs', authMiddleware, (req, res) => {
-  const { openId } = req.body;
-  if (!openId) return res.status(400).json({ error: 'OpenID 不能为空' });
+  return res.status(410).json({ success: false, error: '按 OpenID 删除已停用，请使用新的日志删除接口' });
+});
 
-  const result = db.prepare('DELETE FROM access_logs WHERE open_id = ?').run(openId);
-  return res.json({ success: true, deleted: result.changes });
+app.post('/api/admin/delete-logs', authMiddleware, (req, res) => {
+  const scope = typeof req.body?.scope === 'string' ? req.body.scope.trim() : '';
+
+  if (scope === 'ids') {
+    const ids = normalizeLogIds(req.body?.ids);
+    if (ids.length === 0) return res.status(400).json({ success: false, error: '请选择要删除的记录' });
+    const deleted = deleteAccessLogsByIds(ids);
+    return res.json({ success: true, deleted });
+  }
+
+  if (scope === 'filtered') {
+    const { filters, joinedTables, whereClause, params } = buildAdminLogFilterParts(req.body?.filters || {});
+    if (!hasActiveAdminLogFilters(filters)) {
+      return res.status(400).json({ success: false, error: '请先设置筛选条件' });
+    }
+
+    const result = db.prepare(`
+      DELETE FROM access_logs
+      WHERE id IN (
+        SELECT l.id
+        ${joinedTables}
+        ${whereClause}
+      )
+    `).run(...params);
+
+    return res.json({ success: true, deleted: result.changes });
+  }
+
+  return res.status(400).json({ success: false, error: '不支持的删除方式' });
 });
 
 // 更新保留天数
@@ -838,6 +943,9 @@ app.use((req, res, next) => {
     res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=3600');
   }
   next();
+});
+app.post(['/admin', '/admin/'], (req, res) => {
+  return res.redirect(303, '/admin/');
 });
 app.use('/admin', express.static(path.join(__dirname, 'admin'), { etag: true, maxAge: '1h' }));
 app.use(express.static(path.join(__dirname, 'public'), { etag: true }));

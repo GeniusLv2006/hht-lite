@@ -302,23 +302,55 @@
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
-      align-items: center;
+      align-items: stretch;
     }
     .filter-input, .filter-select {
-      padding: 8px 10px;
+      box-sizing: border-box;
+      height: 48px;
+      padding: 0 12px;
       background: var(--bg-2);
       border: 1px solid var(--line-faint);
       color: var(--ink);
       font-family: 'IBM Plex Mono', monospace;
       font-size: 12px;
+      line-height: 1.2;
       outline: none;
       transition: border-color 0.12s;
       border-radius: 0;
       min-width: 0;
     }
+    .filter-input {
+      flex: 1 1 150px;
+      width: 100%;
+    }
+    .filter-input.filter-openid {
+      flex: 2 1 260px;
+      min-width: 220px;
+    }
+    .filter-select {
+      flex: 1 1 148px;
+      min-width: 148px;
+      padding-right: 34px;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image:
+        linear-gradient(45deg, transparent 50%, var(--ink-2) 50%),
+        linear-gradient(135deg, var(--ink-2) 50%, transparent 50%);
+      background-position:
+        calc(100% - 15px) calc(50% - 2px),
+        calc(100% - 10px) calc(50% - 2px);
+      background-size: 5px 5px, 5px 5px;
+      background-repeat: no-repeat;
+    }
+    .filter-input[type="date"] {
+      min-width: 156px;
+      padding-right: 12px;
+    }
     .filter-input:focus, .filter-select:focus { border-color: var(--accent); }
     .filter-btn {
-      padding: 8px 14px;
+      box-sizing: border-box;
+      height: 48px;
+      padding: 0 14px;
       background: var(--ink);
       color: var(--bg);
       border: none;
@@ -329,6 +361,9 @@
       border-radius: 0;
       transition: opacity 0.12s;
       white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
     }
     .filter-btn:hover { opacity: 0.85; }
     .filter-btn.reset {
@@ -337,6 +372,106 @@
       border: 1px solid var(--line-faint);
     }
     .filter-btn.reset:hover { border-color: var(--line); background: var(--bg-2); }
+    .filter-shortcuts {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+      align-items: center;
+    }
+    .filter-shortcut {
+      padding: 6px 10px;
+      background: transparent;
+      border: 1px solid var(--line-faint);
+      color: var(--ink-2);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      cursor: pointer;
+      border-radius: 0;
+      transition: border-color 0.12s, background 0.12s, color 0.12s;
+      white-space: nowrap;
+    }
+    .filter-shortcut:hover {
+      border-color: var(--line);
+      background: var(--bg-2);
+      color: var(--ink);
+    }
+    .filter-shortcut.active {
+      border-color: rgba(194,59,34,0.28);
+      background: rgba(194,59,34,0.08);
+      color: var(--accent);
+    }
+    .filter-summary {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-top: 10px;
+      min-height: 22px;
+    }
+    .filter-summary-label,
+    .filter-summary-count {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--ink-2);
+    }
+    .filter-chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      padding: 0 8px;
+      border: 1px solid var(--line-faint);
+      background: var(--bg-2);
+      color: var(--ink);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      line-height: 1.2;
+      white-space: nowrap;
+    }
+    .filter-chip.empty {
+      color: var(--ink-2);
+    }
+    .log-bulk-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px 12px;
+      margin-top: 10px;
+      padding: 10px 12px;
+      border: 1px solid var(--line-faint);
+      background: var(--bg-2);
+    }
+    .log-bulk-meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+    .log-bulk-status {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--ink-2);
+    }
+    .log-bulk-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .btn-small.btn-danger-soft {
+      border-color: rgba(184,50,37,0.25);
+      color: var(--danger);
+      background: rgba(184,50,37,0.08);
+    }
+    .btn-small.btn-danger-soft:hover:not(:disabled) {
+      border-color: rgba(184,50,37,0.4);
+      background: rgba(184,50,37,0.12);
+    }
+    .btn-small:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
     .note {
       font-size: 11px;
       color: var(--ink-2);
@@ -346,7 +481,7 @@
 
     /* Table */
     .table-scroll-shell {
-      --sticky-col-width: 140px;
+      --sticky-col-width: 184px;
       position: relative;
       isolation: isolate;
     }
@@ -450,12 +585,24 @@
       opacity: 0.75;
     }
     .actions-cell { white-space: nowrap; }
+    .table-select-col {
+      width: 44px;
+      min-width: 44px;
+      text-align: center;
+      position: sticky;
+      left: 0;
+      z-index: 4;
+      box-shadow: 1px 0 0 var(--line-faint);
+    }
     .table-time-col {
       min-width: 140px;
       position: sticky;
-      left: 0;
+      left: 44px;
       z-index: 3;
       box-shadow: 1px 0 0 var(--line-faint);
+    }
+    thead .table-select-col {
+      z-index: 7;
     }
     thead .table-time-col {
       z-index: 6;
@@ -465,6 +612,18 @@
     .table-device-col { min-width: 180px; }
     .table-ip-col { min-width: 220px; }
     .table-actions-col { min-width: 170px; }
+    tr.is-selected td,
+    .log-card.is-selected {
+      background: rgba(194,59,34,0.06);
+    }
+    .log-select-checkbox,
+    .select-all-checkbox {
+      width: 16px;
+      height: 16px;
+      margin: 0;
+      cursor: pointer;
+      accent-color: var(--accent);
+    }
 
     /* Action badges */
     .action-badge {
@@ -555,6 +714,12 @@
       align-items: center;
       justify-content: space-between;
       margin-bottom: 6px;
+    }
+    .log-card-header-main {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
     }
     .log-card-time {
       font-family: 'IBM Plex Mono', monospace;
@@ -820,7 +985,7 @@
   <div class="login-container" id="loginPage">
     <div class="login-box">
       <h1>管理后台</h1>
-      <form id="loginForm">
+      <form id="loginForm" onsubmit="event.preventDefault(); return false;">
         <div class="form-group">
           <label>用户名</label>
           <input type="text" id="username" required autocomplete="username">
@@ -877,7 +1042,9 @@
         <div class="card-header">
           <h2>访问记录</h2>
           <div class="filters">
-            <input type="text" class="filter-input" placeholder="OpenID" id="filterOpenId" style="flex:2;min-width:120px;">
+            <input type="text" class="filter-input filter-openid" placeholder="OpenID" id="filterOpenId">
+            <input type="text" class="filter-input" placeholder="用户名" id="filterUserName">
+            <input type="text" class="filter-input" placeholder="标签" id="filterTag">
             <select class="filter-select" id="filterAction">
               <option value="">全部操作</option>
               <option value="page_load">页面加载</option>
@@ -896,10 +1063,33 @@
               <option value="windows">Windows</option>
               <option value="wechat">微信</option>
             </select>
+            <select class="filter-select" id="filterBlocked">
+              <option value="">全部状态</option>
+              <option value="blocked">仅已拉黑</option>
+              <option value="normal">仅未拉黑</option>
+            </select>
             <input type="date" class="filter-input" id="filterStartDate">
             <input type="date" class="filter-input" id="filterEndDate">
             <button class="filter-btn" onclick="applyFilters()">筛选</button>
             <button class="filter-btn reset" onclick="resetFilters()">重置</button>
+          </div>
+          <div class="filter-shortcuts" id="filterShortcuts">
+            <button type="button" class="filter-shortcut" data-range="today">今天</button>
+            <button type="button" class="filter-shortcut" data-range="last7">近 7 天</button>
+            <button type="button" class="filter-shortcut" data-range="last30">近 30 天</button>
+            <button type="button" class="filter-shortcut" data-range="month">本月</button>
+          </div>
+          <div class="filter-summary" id="filterSummary"></div>
+          <div class="log-bulk-actions">
+            <div class="log-bulk-meta">
+              <span class="log-bulk-status" id="logSelectionStatus">未选中记录</span>
+            </div>
+            <div class="log-bulk-buttons">
+              <button type="button" class="btn-small" id="selectVisibleBtn">全选本页</button>
+              <button type="button" class="btn-small" id="clearSelectionBtn" disabled>清空选择</button>
+              <button type="button" class="btn-small btn-danger-soft" id="deleteSelectedBtn" disabled>删除选中</button>
+              <button type="button" class="btn-small btn-danger-soft" id="deleteFilteredBtn" disabled>删除筛选结果</button>
+            </div>
           </div>
           <div class="note">* 设备版本号可能因浏览器隐私保护机制而显示不准确（Chrome 会冻结版本号）</div>
         </div>
@@ -910,6 +1100,7 @@
             <table>
               <thead>
                 <tr>
+                  <th class="table-select-col"><input type="checkbox" class="select-all-checkbox" id="selectPageCheckbox" aria-label="全选本页"></th>
                   <th class="table-time-col">时间</th>
                   <th class="table-openid-col">OpenID</th>
                   <th class="table-action-col">操作</th>
@@ -956,7 +1147,7 @@
   <div class="modal" id="changePasswordModal">
     <div class="modal-content">
       <h2>修改密码</h2>
-      <form id="changePasswordForm">
+      <form id="changePasswordForm" onsubmit="event.preventDefault(); return false;">
         <div class="form-group">
           <label>当前密码</label>
           <input type="password" id="oldPassword" required>
@@ -977,7 +1168,7 @@
   <div class="modal" id="clearLogsModal">
     <div class="modal-content">
       <h2>清理日志</h2>
-      <form id="clearLogsForm">
+      <form id="clearLogsForm" onsubmit="event.preventDefault(); return false;">
         <div class="form-group">
           <label>自动清理保留天数</label>
           <select id="retentionDays">
@@ -1010,7 +1201,7 @@
   <div class="modal" id="tagModal">
     <div class="modal-content">
       <h2>设置标签</h2>
-      <form id="tagForm">
+      <form id="tagForm" onsubmit="event.preventDefault(); return false;">
         <div class="form-group">
           <label>OpenID</label>
           <input type="text" id="tagOpenId" readonly class="readonly-input">
@@ -1031,7 +1222,7 @@
   <div class="modal" id="blockModal">
     <div class="modal-content">
       <h2>拉黑用户</h2>
-      <form id="blockForm">
+      <form id="blockForm" onsubmit="event.preventDefault(); return false;">
         <div class="form-group">
           <label>OpenID</label>
           <input type="text" id="blockOpenId" readonly class="readonly-input">
@@ -1144,14 +1335,272 @@
         }
       });
     })();
+    const FILTER_STORAGE_KEY = 'adminLogFilters';
+    const defaultFilters = Object.freeze({
+      openId: '',
+      userName: '',
+      tag: '',
+      action: '',
+      device: '',
+      blocked: '',
+      startDate: '',
+      endDate: ''
+    });
+    const actionLabels = {
+      page_load: '页面加载',
+      qr_manual: '手动刷新',
+      qr_auto: '自动刷新',
+      qr_timeout: '生成超时',
+      qr_blocked: '已被拉黑',
+      admin_verify_attempt: '管理员验证',
+      admin_verify_success: '验证成功',
+      admin_verify: '管理员验证'
+    };
+    const deviceLabels = {
+      iphone: 'iPhone',
+      ipad: 'iPad',
+      android: 'Android',
+      mac: 'Mac',
+      windows: 'Windows',
+      wechat: '微信'
+    };
+    const blockedLabels = {
+      blocked: '仅已拉黑',
+      normal: '仅未拉黑'
+    };
+    const filterInputIds = ['filterOpenId', 'filterUserName', 'filterTag', 'filterAction', 'filterDevice', 'filterBlocked', 'filterStartDate', 'filterEndDate'];
+    const autoApplyFilterIds = ['filterAction', 'filterDevice', 'filterBlocked', 'filterStartDate', 'filterEndDate'];
     let currentPage = 1;
     let totalPages = 1;
     let totalRecords = 0;
+    let currentPageLogIds = [];
+    const selectedLogIds = new Set();
     const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
     let currentPageSize = PAGE_SIZE_OPTIONS.includes(parseInt(localStorage.getItem('adminPageSize'), 10))
       ? parseInt(localStorage.getItem('adminPageSize'), 10)
       : 20;
-    let currentFilters = { openId: '', action: '', device: '', startDate: '', endDate: '' };
+    let currentFilters = { ...defaultFilters };
+    let currentQuickRange = '';
+
+    function normalizeFilterString(value) {
+      return typeof value === 'string' ? value.trim() : '';
+    }
+
+    function normalizeLogId(value) {
+      const parsed = Number.parseInt(value, 10);
+      return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+    }
+
+    function normalizeFilters(source = {}) {
+      const normalized = {
+        openId: normalizeFilterString(source.openId),
+        userName: normalizeFilterString(source.userName),
+        tag: normalizeFilterString(source.tag),
+        action: normalizeFilterString(source.action),
+        device: normalizeFilterString(source.device),
+        blocked: normalizeFilterString(source.blocked),
+        startDate: normalizeFilterString(source.startDate),
+        endDate: normalizeFilterString(source.endDate)
+      };
+
+      if (!['', 'blocked', 'normal'].includes(normalized.blocked)) normalized.blocked = '';
+      if (normalized.startDate && normalized.endDate && normalized.startDate > normalized.endDate) {
+        const temp = normalized.startDate;
+        normalized.startDate = normalized.endDate;
+        normalized.endDate = temp;
+      }
+      return normalized;
+    }
+
+    function readFiltersFromInputs() {
+      return normalizeFilters({
+        openId: document.getElementById('filterOpenId').value,
+        userName: document.getElementById('filterUserName').value,
+        tag: document.getElementById('filterTag').value,
+        action: document.getElementById('filterAction').value,
+        device: document.getElementById('filterDevice').value,
+        blocked: document.getElementById('filterBlocked').value,
+        startDate: document.getElementById('filterStartDate').value,
+        endDate: document.getElementById('filterEndDate').value
+      });
+    }
+
+    function writeFiltersToInputs(filters) {
+      document.getElementById('filterOpenId').value = filters.openId || '';
+      document.getElementById('filterUserName').value = filters.userName || '';
+      document.getElementById('filterTag').value = filters.tag || '';
+      document.getElementById('filterAction').value = filters.action || '';
+      document.getElementById('filterDevice').value = filters.device || '';
+      document.getElementById('filterBlocked').value = filters.blocked || '';
+      document.getElementById('filterStartDate').value = filters.startDate || '';
+      document.getElementById('filterEndDate').value = filters.endDate || '';
+    }
+
+    function formatDateInputValue(date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    function buildShortcutRange(range) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const end = formatDateInputValue(today);
+      if (range === 'today') return { startDate: end, endDate: end };
+      if (range === 'last7') {
+        const start = new Date(today);
+        start.setDate(start.getDate() - 6);
+        return { startDate: formatDateInputValue(start), endDate: end };
+      }
+      if (range === 'last30') {
+        const start = new Date(today);
+        start.setDate(start.getDate() - 29);
+        return { startDate: formatDateInputValue(start), endDate: end };
+      }
+      if (range === 'month') {
+        const start = new Date(today.getFullYear(), today.getMonth(), 1);
+        return { startDate: formatDateInputValue(start), endDate: end };
+      }
+      return null;
+    }
+
+    function detectQuickRange(filters) {
+      const ranges = ['today', 'last7', 'last30', 'month'];
+      return ranges.find((range) => {
+        const preset = buildShortcutRange(range);
+        return preset && preset.startDate === filters.startDate && preset.endDate === filters.endDate;
+      }) || '';
+    }
+
+    function updateShortcutState() {
+      document.querySelectorAll('.filter-shortcut').forEach((button) => {
+        button.classList.toggle('active', button.dataset.range === currentQuickRange);
+      });
+    }
+
+    function buildFilterSummaryItems(filters) {
+      const items = [];
+      if (filters.openId) items.push(`OpenID：${filters.openId}`);
+      if (filters.userName) items.push(`用户名：${filters.userName}`);
+      if (filters.tag) items.push(`标签：${filters.tag}`);
+      if (filters.action) items.push(`操作：${actionLabels[filters.action] || filters.action}`);
+      if (filters.device) items.push(`设备：${deviceLabels[filters.device] || filters.device}`);
+      if (filters.blocked) items.push(`状态：${blockedLabels[filters.blocked] || filters.blocked}`);
+      if (filters.startDate || filters.endDate) {
+        const rangeText = [filters.startDate || '开始', filters.endDate || '今天'].join(' ~ ');
+        items.push(`时间：${rangeText}`);
+      }
+      return items;
+    }
+
+    function hasActiveLogFilters(filters = currentFilters) {
+      return buildFilterSummaryItems(filters).length > 0;
+    }
+
+    function clearSelectedLogs(ids = null) {
+      if (ids === null) {
+        selectedLogIds.clear();
+      } else {
+        ids.forEach((id) => selectedLogIds.delete(id));
+      }
+      updateLogSelectionUi();
+    }
+
+    function toggleCurrentPageSelection(checked) {
+      currentPageLogIds.forEach((id) => {
+        if (checked) selectedLogIds.add(id);
+        else selectedLogIds.delete(id);
+      });
+      updateLogSelectionUi();
+    }
+
+    function updateLogSelectionUi() {
+      const selectedCount = selectedLogIds.size;
+      const selectedOnPage = currentPageLogIds.filter((id) => selectedLogIds.has(id)).length;
+      const selectPageCheckbox = document.getElementById('selectPageCheckbox');
+
+      if (selectPageCheckbox) {
+        selectPageCheckbox.checked = currentPageLogIds.length > 0 && selectedOnPage === currentPageLogIds.length;
+        selectPageCheckbox.indeterminate = selectedOnPage > 0 && selectedOnPage < currentPageLogIds.length;
+      }
+
+      document.querySelectorAll('[data-log-select]').forEach((input) => {
+        const logId = normalizeLogId(input.dataset.logid);
+        const isSelected = logId !== null && selectedLogIds.has(logId);
+        input.checked = isSelected;
+        const container = input.closest('tr, .log-card');
+        if (container) container.classList.toggle('is-selected', isSelected);
+      });
+
+      document.getElementById('logSelectionStatus').textContent = selectedCount > 0
+        ? `已选 ${selectedCount} 条记录`
+        : '未选中记录';
+      document.getElementById('clearSelectionBtn').disabled = selectedCount === 0;
+      document.getElementById('deleteSelectedBtn').disabled = selectedCount === 0;
+      document.getElementById('deleteFilteredBtn').disabled = !hasActiveLogFilters() || totalRecords === 0;
+      document.getElementById('selectVisibleBtn').disabled = currentPageLogIds.length === 0;
+    }
+
+    function renderFilterSummary(options = {}) {
+      const { loading = false, total = totalRecords } = options;
+      const summary = document.getElementById('filterSummary');
+      if (!summary) return;
+      const items = buildFilterSummaryItems(currentFilters);
+      const chips = items.length
+        ? items.map((item) => `<span class="filter-chip">${escapeHtml(item)}</span>`).join('')
+        : '<span class="filter-chip empty">当前显示全部记录</span>';
+      const countText = loading ? '记录数更新中…' : `命中 ${total} 条`;
+      summary.innerHTML = `<span class="filter-summary-label">当前筛选</span>${chips}<span class="filter-summary-count">${countText}</span>`;
+      updateShortcutState();
+    }
+
+    function syncFilterStateToUrl() {
+      const url = new URL(window.location.href);
+      Object.entries(currentFilters).forEach(([key, value]) => {
+        if (value) url.searchParams.set(key, value);
+        else url.searchParams.delete(key);
+      });
+      if (currentPage > 1) url.searchParams.set('page', String(currentPage));
+      else url.searchParams.delete('page');
+      if (currentPageSize !== 20) url.searchParams.set('limit', String(currentPageSize));
+      else url.searchParams.delete('limit');
+      window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
+    }
+
+    function persistFilterState() {
+      localStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify(currentFilters));
+      syncFilterStateToUrl();
+    }
+
+    function restoreFilterState() {
+      const searchParams = new URLSearchParams(window.location.search);
+      let storedFilters = {};
+      try {
+        storedFilters = JSON.parse(localStorage.getItem(FILTER_STORAGE_KEY) || '{}');
+      } catch (error) {
+        storedFilters = {};
+      }
+
+      const hasUrlFilters = Object.keys(defaultFilters).some((key) => searchParams.has(key));
+      const initialFilters = hasUrlFilters
+        ? Object.fromEntries(Object.keys(defaultFilters).map((key) => [key, searchParams.get(key) || '']))
+        : storedFilters;
+
+      currentFilters = normalizeFilters(initialFilters);
+
+      const pageFromUrl = parseInt(searchParams.get('page'), 10);
+      if (Number.isInteger(pageFromUrl) && pageFromUrl > 0) currentPage = pageFromUrl;
+
+      const pageSizeFromUrl = parseInt(searchParams.get('limit'), 10);
+      if (PAGE_SIZE_OPTIONS.includes(pageSizeFromUrl)) currentPageSize = pageSizeFromUrl;
+
+      currentQuickRange = detectQuickRange(currentFilters);
+      writeFiltersToInputs(currentFilters);
+      document.getElementById('pageSizeSelect').value = String(currentPageSize);
+      renderFilterSummary();
+      syncFilterStateToUrl();
+    }
 
     // Cookie 由服务端管理；adminLoggedIn 可读 Cookie 存在时验证后展示后台
     if (document.cookie.includes('adminLoggedIn=')) {
@@ -1169,13 +1618,44 @@
         jumpToPage();
       }
     });
-    document.getElementById('pageSizeSelect').value = String(currentPageSize);
+    restoreFilterState();
     document.getElementById('pageSizeSelect').addEventListener('change', function(e) {
       const nextSize = parseInt(e.target.value, 10);
       currentPageSize = PAGE_SIZE_OPTIONS.includes(nextSize) ? nextSize : 20;
       localStorage.setItem('adminPageSize', String(currentPageSize));
       currentPage = 1;
+      clearSelectedLogs();
+      syncFilterStateToUrl();
       loadLogs();
+    });
+    document.getElementById('selectVisibleBtn').addEventListener('click', () => toggleCurrentPageSelection(true));
+    document.getElementById('clearSelectionBtn').addEventListener('click', () => clearSelectedLogs());
+    document.getElementById('deleteSelectedBtn').addEventListener('click', () => deleteSelectedLogs());
+    document.getElementById('deleteFilteredBtn').addEventListener('click', () => deleteFilteredLogs());
+    document.getElementById('selectPageCheckbox').addEventListener('change', (e) => {
+      toggleCurrentPageSelection(e.target.checked);
+    });
+    updateLogSelectionUi();
+
+    filterInputIds.forEach((id) => {
+      const element = document.getElementById(id);
+      if (!element) return;
+      if (autoApplyFilterIds.includes(id)) {
+        element.addEventListener('change', () => applyFilters());
+      } else {
+        element.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            applyFilters();
+          }
+        });
+      }
+    });
+
+    document.getElementById('filterShortcuts').addEventListener('click', (event) => {
+      const button = event.target.closest('[data-range]');
+      if (!button) return;
+      applyQuickRange(button.dataset.range);
     });
 
     document.getElementById('loginForm').addEventListener('submit', async (e) => {
@@ -1246,14 +1726,26 @@
       const action = btn.dataset.action;
       const openId = btn.dataset.openid;
       const tag = btn.dataset.tag || '';
+      const logId = normalizeLogId(btn.dataset.logid);
       if (action === 'tag')     showTagModal(openId, tag);
-      else if (action === 'delete')  deleteUserLogs(openId);
+      else if (action === 'delete-log' && logId !== null) deleteSingleLog(logId);
       else if (action === 'unblock') unblockUser(openId);
       else if (action === 'block')   showBlockModal(openId);
       else if (action === 'filter')  filterByUser(openId);
     }
+    function handleLogSelectionChange(e) {
+      const checkbox = e.target.closest('[data-log-select]');
+      if (!checkbox) return;
+      const logId = normalizeLogId(checkbox.dataset.logid);
+      if (logId === null) return;
+      if (checkbox.checked) selectedLogIds.add(logId);
+      else selectedLogIds.delete(logId);
+      updateLogSelectionUi();
+    }
     document.getElementById('logsTable').addEventListener('click', handleActionClick);
     document.getElementById('logCards').addEventListener('click', handleActionClick);
+    document.getElementById('logsTable').addEventListener('change', handleLogSelectionChange);
+    document.getElementById('logCards').addEventListener('change', handleLogSelectionChange);
     document.getElementById('blacklistContent').addEventListener('click', handleActionClick);
     document.getElementById('usersList').addEventListener('click', handleActionClick);
     // ──────────────────────────────────────────────────────────────────────────────
@@ -1300,23 +1792,58 @@
       showModal('blockModal');
     }
 
-    async function deleteUserLogs(openId) {
-      if (!confirm(`确定删除 ${openId} 的所有记录吗？此操作不可恢复。`)) return;
+    async function deleteLogsRequest(payload) {
       try {
-        const res = await fetch(`${API_BASE}/api/admin/delete-user-logs`, {
+        const res = await fetch(`${API_BASE}/api/admin/delete-logs`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ openId })
+          body: JSON.stringify(payload)
         });
         const data = await res.json();
-        if (data.success) {
-          alert(`已删除 ${data.deleted} 条记录`);
-          loadStats();
-          loadLogs();
-        } else {
-          alert(data.error || "删除失败");
-        }
-      } catch (e) { console.error(e); alert("删除失败"); }
+        if (!res.ok || !data.success) throw new Error(data.error || '删除失败');
+        return data;
+      } catch (e) {
+        console.error(e);
+        alert(e.message || "删除失败");
+        return null;
+      }
+    }
+
+    async function deleteSingleLog(logId) {
+      if (!confirm('确定删除这条记录吗？此操作不可恢复。')) return;
+      const result = await deleteLogsRequest({ scope: 'ids', ids: [logId] });
+      if (!result) return;
+      clearSelectedLogs([logId]);
+      alert(`已删除 ${result.deleted} 条记录`);
+      loadStats();
+      loadLogs();
+    }
+
+    async function deleteSelectedLogs() {
+      const ids = Array.from(selectedLogIds);
+      if (!ids.length) return;
+      if (!confirm(`确定删除已选中的 ${ids.length} 条记录吗？此操作不可恢复。`)) return;
+      const result = await deleteLogsRequest({ scope: 'ids', ids });
+      if (!result) return;
+      clearSelectedLogs(ids);
+      alert(`已删除 ${result.deleted} 条记录`);
+      loadStats();
+      loadLogs();
+    }
+
+    async function deleteFilteredLogs() {
+      if (!hasActiveLogFilters()) {
+        alert('请先设置筛选条件，再执行筛选批量删除。');
+        return;
+      }
+      if (!totalRecords) return;
+      if (!confirm(`当前筛选结果共 ${totalRecords} 条，确定全部删除吗？此操作不可恢复。`)) return;
+      const result = await deleteLogsRequest({ scope: 'filtered', filters: currentFilters });
+      if (!result) return;
+      clearSelectedLogs();
+      alert(`已删除 ${result.deleted} 条记录`);
+      loadStats();
+      loadLogs();
     }
 
     async function unblockUser(openId) {
@@ -1411,23 +1938,33 @@
     function refreshData() { loadStats(); loadLogs(); }
 
     function applyFilters() {
-      currentFilters.openId = document.getElementById('filterOpenId').value;
-      currentFilters.action = document.getElementById('filterAction').value;
-      currentFilters.device = document.getElementById('filterDevice').value;
-      currentFilters.startDate = document.getElementById('filterStartDate').value;
-      currentFilters.endDate = document.getElementById('filterEndDate').value;
+      currentFilters = readFiltersFromInputs();
+      writeFiltersToInputs(currentFilters);
+      currentQuickRange = detectQuickRange(currentFilters);
       currentPage = 1;
+      clearSelectedLogs();
+      persistFilterState();
+      renderFilterSummary({ loading: true });
       loadLogs();
     }
 
+    function applyQuickRange(range) {
+      const shortcutRange = buildShortcutRange(range);
+      if (!shortcutRange) return;
+      document.getElementById('filterStartDate').value = shortcutRange.startDate;
+      document.getElementById('filterEndDate').value = shortcutRange.endDate;
+      currentQuickRange = range;
+      applyFilters();
+    }
+
     function resetFilters() {
-      document.getElementById('filterOpenId').value = '';
-      document.getElementById('filterAction').value = '';
-      document.getElementById('filterDevice').value = '';
-      document.getElementById('filterStartDate').value = '';
-      document.getElementById('filterEndDate').value = '';
-      currentFilters = { openId: '', action: '', device: '', startDate: '', endDate: '' };
+      currentFilters = { ...defaultFilters };
+      currentQuickRange = '';
+      writeFiltersToInputs(currentFilters);
       currentPage = 1;
+      clearSelectedLogs();
+      persistFilterState();
+      renderFilterSummary({ loading: true });
       loadLogs();
     }
 
@@ -1447,24 +1984,44 @@
     }
 
     async function loadLogs() {
+      renderFilterSummary({ loading: true });
       try {
         const params = new URLSearchParams({ page: currentPage, limit: currentPageSize });
         if (currentFilters.openId) params.append('openId', currentFilters.openId);
+        if (currentFilters.userName) params.append('userName', currentFilters.userName);
+        if (currentFilters.tag) params.append('tag', currentFilters.tag);
         if (currentFilters.action) params.append('action', currentFilters.action);
         if (currentFilters.device) params.append('device', currentFilters.device);
+        if (currentFilters.blocked) params.append('blocked', currentFilters.blocked);
         if (currentFilters.startDate) params.append('startDate', currentFilters.startDate);
         if (currentFilters.endDate) params.append('endDate', currentFilters.endDate);
 
         const res = await fetch(`${API_BASE}/api/admin/logs?${params}`, { headers: {} });
         const data = await res.json();
         if (data.success) {
-          totalPages = data.pagination.totalPages || 1;
-          totalRecords = data.pagination.total;
+          const nextTotalPages = Math.max(data.pagination.totalPages || 0, 1);
+          const nextTotalRecords = data.pagination.total || 0;
+          if ((nextTotalRecords > 0 && currentPage > nextTotalPages) || (nextTotalRecords === 0 && currentPage !== 1)) {
+            currentPage = nextTotalRecords === 0 ? 1 : nextTotalPages;
+            syncFilterStateToUrl();
+            return loadLogs();
+          }
+          totalPages = nextTotalPages;
+          totalRecords = nextTotalRecords;
+          currentPageLogIds = data.data.map((log) => normalizeLogId(log.id)).filter((id) => id !== null);
+          syncFilterStateToUrl();
           renderLogs(data.data);
           renderLogCards(data.data);
           renderPagination(data.pagination);
+          renderFilterSummary({ total: data.pagination.total });
+          updateLogSelectionUi();
         }
-      } catch (e) { console.error(e); }
+      } catch (e) {
+        console.error(e);
+        renderFilterSummary({ total: totalRecords });
+        currentPageLogIds = [];
+        updateLogSelectionUi();
+      }
     }
 
     // 详细设备解析
@@ -1558,14 +2115,22 @@
     }
 
     function renderLogs(logs) {
+      if (!logs.length) {
+        document.getElementById('logsTable').innerHTML = '<tr><td colspan="7"><div class="empty-state">暂无符合条件的记录</div></td></tr>';
+        requestAnimationFrame(updateTableScrollHints);
+        return;
+      }
       document.getElementById('logsTable').innerHTML = logs.map(log => {
+        const logId = normalizeLogId(log.id);
+        const isSelected = logId !== null && selectedLogIds.has(logId);
         const device = parseDevice(log.user_agent);
         const openIdSafe = escapeHtml(log.open_id);
         const tagSafe = escapeHtml(log.tag);
         const actionLabel = escapeHtml(formatAction(log.action));
         const openIdMeta = renderOpenIdMeta(log, tagSafe);
         return `
-        <tr>
+        <tr class="${isSelected ? 'is-selected' : ''}">
+          <td class="table-select-col"><input type="checkbox" class="log-select-checkbox" data-log-select data-logid="${logId || ''}" ${isSelected ? 'checked' : ''} aria-label="选择该记录"></td>
           <td class="table-time-col" style="white-space:nowrap;">${formatDate(log.created_at)}</td>
           <td class="table-openid-col">
             <div class="openid-cell">${openIdSafe}</div>
@@ -1586,7 +2151,7 @@
             ${log.ip_geo ? `<div class="ip-geo">${escapeHtml(log.ip_geo)}</div>` : ''}
           </td>
           <td class="actions-cell table-actions-col">
-            <button class="btn-tag" data-action="tag" data-openid="${openIdSafe}" data-tag="${tagSafe}">标签</button><button class="btn-delete" data-action="delete" data-openid="${openIdSafe}">删除</button>
+            <button class="btn-tag" data-action="tag" data-openid="${openIdSafe}" data-tag="${tagSafe}">标签</button><button class="btn-delete" data-action="delete-log" data-logid="${logId || ''}">删除</button>
             ${log.blocked_reason !== null
               ? `<button class="btn-unblock" data-action="unblock" data-openid="${openIdSafe}">解黑</button>`
               : `<button class="btn-block" data-action="block" data-openid="${openIdSafe}">拉黑</button>`}
@@ -1597,16 +2162,25 @@
     }
 
     function renderLogCards(logs) {
+      if (!logs.length) {
+        document.getElementById('logCards').innerHTML = '<div class="empty-state">暂无符合条件的记录</div>';
+        return;
+      }
       document.getElementById('logCards').innerHTML = logs.map(log => {
+        const logId = normalizeLogId(log.id);
+        const isSelected = logId !== null && selectedLogIds.has(logId);
         const device = parseDevice(log.user_agent);
         const openIdSafe = escapeHtml(log.open_id);
         const tagSafe = escapeHtml(log.tag);
         const actionLabel = escapeHtml(formatAction(log.action));
         const openIdMeta = renderOpenIdMeta(log, tagSafe);
         return `
-        <div class="log-card">
+        <div class="log-card ${isSelected ? 'is-selected' : ''}">
           <div class="log-card-header">
-            <span class="log-card-time">${formatDate(log.created_at)}</span>
+            <div class="log-card-header-main">
+              <input type="checkbox" class="log-select-checkbox" data-log-select data-logid="${logId || ''}" ${isSelected ? 'checked' : ''} aria-label="选择该记录">
+              <span class="log-card-time">${formatDate(log.created_at)}</span>
+            </div>
             <span class="action-badge ${getActionClass(log.action)}">${actionLabel}</span>
           </div>
           <div class="log-card-openid">
@@ -1625,7 +2199,7 @@
           <div class="log-card-row">
             <div></div>
             <div class="log-card-actions">
-              <button class="btn-tag" data-action="tag" data-openid="${openIdSafe}" data-tag="${tagSafe}">标签</button><button class="btn-delete" data-action="delete" data-openid="${openIdSafe}">删除</button>
+              <button class="btn-tag" data-action="tag" data-openid="${openIdSafe}" data-tag="${tagSafe}">标签</button><button class="btn-delete" data-action="delete-log" data-logid="${logId || ''}">删除</button>
               ${log.blocked_reason !== null
                 ? `<button class="btn-unblock" data-action="unblock" data-openid="${openIdSafe}">解黑</button>`
                 : `<button class="btn-block" data-action="block" data-openid="${openIdSafe}">拉黑</button>`}
@@ -1636,6 +2210,7 @@
     }
 
     function renderPagination(p) {
+      const safeTotalPages = Math.max(p.totalPages || 0, 1);
       let html = '';
 
       // 首页
@@ -1644,7 +2219,7 @@
 
       // 页码按钮
       const start = Math.max(1, p.page - 2);
-      const end = Math.min(p.totalPages, p.page + 2);
+      const end = Math.min(safeTotalPages, p.page + 2);
 
       if (start > 1) {
         html += `<button onclick="goToPage(1)">1</button>`;
@@ -1655,21 +2230,21 @@
         html += `<button class="${i === p.page ? 'current' : ''}" onclick="goToPage(${i})">${i}</button>`;
       }
 
-      if (end < p.totalPages) {
-        if (end < p.totalPages - 1) html += `<span style="padding:0 4px;color:var(--ink-2);">…</span>`;
-        html += `<button onclick="goToPage(${p.totalPages})">${p.totalPages}</button>`;
+      if (end < safeTotalPages) {
+        if (end < safeTotalPages - 1) html += `<span style="padding:0 4px;color:var(--ink-2);">…</span>`;
+        html += `<button onclick="goToPage(${safeTotalPages})">${safeTotalPages}</button>`;
       }
 
-      html += `<button onclick="goToPage(${p.page + 1})" ${p.page >= p.totalPages ? 'disabled' : ''}>下页</button>`;
-      html += `<button onclick="goToPage(${p.totalPages})" ${p.page >= p.totalPages ? 'disabled' : ''}>末页</button>`;
+      html += `<button onclick="goToPage(${p.page + 1})" ${p.page >= safeTotalPages ? 'disabled' : ''}>下页</button>`;
+      html += `<button onclick="goToPage(${safeTotalPages})" ${p.page >= safeTotalPages ? 'disabled' : ''}>末页</button>`;
 
       document.getElementById('paginationNav').innerHTML = html;
 
       // 更新跳转输入框
       document.getElementById('pageSizeSelect').value = String(p.limit || currentPageSize);
       document.getElementById('jumpPageInput').value = p.page;
-      document.getElementById('jumpPageInput').max = p.totalPages;
-      document.getElementById('pageInfo').textContent = `第 ${p.page} 页，共 ${p.totalPages} 页，共 ${p.total} 条记录，每页 ${p.limit || currentPageSize} 条`;
+      document.getElementById('jumpPageInput').max = safeTotalPages;
+      document.getElementById('pageInfo').textContent = `第 ${p.page} 页，共 ${safeTotalPages} 页，共 ${p.total} 条记录，每页 ${p.limit || currentPageSize} 条`;
     }
 
     function jumpToPage() {
@@ -1685,6 +2260,7 @@
       if (page < 1) page = 1;
       if (page > totalPages) page = totalPages;
       currentPage = page;
+      syncFilterStateToUrl();
       loadLogs();
       // 滚动到顶部
       window.scrollTo({ top: 0, behavior: 'smooth' });
