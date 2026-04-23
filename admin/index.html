@@ -299,15 +299,26 @@
       margin-bottom: 12px;
     }
     .filters {
-      display: flex;
-      flex-wrap: wrap;
+      display: grid;
+      grid-template-columns:
+        minmax(200px, 1.7fr)
+        minmax(140px, 1.05fr)
+        minmax(120px, 0.95fr)
+        minmax(120px, 1fr)
+        minmax(120px, 1fr)
+        minmax(120px, 1fr)
+        minmax(145px, 1fr)
+        minmax(145px, 1fr)
+        auto
+        auto;
       gap: 8px;
-      align-items: stretch;
+      align-items: center;
     }
     .filter-input, .filter-select {
       box-sizing: border-box;
-      height: 48px;
-      padding: 0 12px;
+      width: 100%;
+      height: 42px;
+      padding: 0 11px;
       background: var(--bg-2);
       border: 1px solid var(--line-faint);
       color: var(--ink);
@@ -319,17 +330,12 @@
       border-radius: 0;
       min-width: 0;
     }
-    .filter-input {
-      flex: 1 1 150px;
-      width: 100%;
-    }
+    .filter-input { min-width: 0; }
     .filter-input.filter-openid {
-      flex: 2 1 260px;
-      min-width: 220px;
+      min-width: 0;
     }
     .filter-select {
-      flex: 1 1 148px;
-      min-width: 148px;
+      min-width: 0;
       padding-right: 34px;
       appearance: none;
       -webkit-appearance: none;
@@ -343,13 +349,13 @@
       background-repeat: no-repeat;
     }
     .filter-input[type="date"] {
-      min-width: 156px;
+      min-width: 0;
       padding-right: 12px;
     }
     .filter-input:focus, .filter-select:focus { border-color: var(--accent); }
     .filter-btn {
       box-sizing: border-box;
-      height: 48px;
+      height: 42px;
       padding: 0 14px;
       background: var(--ink);
       color: var(--bg);
@@ -364,6 +370,9 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
+    }
+    .filter-btn.reset {
+      min-width: 72px;
     }
     .filter-btn:hover { opacity: 0.85; }
     .filter-btn.reset {
@@ -430,6 +439,22 @@
     }
     .filter-chip.empty {
       color: var(--ink-2);
+    }
+    @media (max-width: 1480px) {
+      .filters {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+      }
+      .filter-input.filter-openid {
+        grid-column: span 2;
+      }
+    }
+    @media (max-width: 980px) {
+      .filters {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .filter-input.filter-openid {
+        grid-column: span 2;
+      }
     }
     .log-bulk-actions {
       display: flex;
