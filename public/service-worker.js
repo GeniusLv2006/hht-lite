@@ -1,4 +1,4 @@
-const CACHE_NAME = 'offline-cache-v4.3.10';
+const CACHE_NAME = 'offline-cache-v4.3.11';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -6,6 +6,7 @@ const urlsToCache = [
   '/ico.png?v=5',
   '/manifest.json',
   '/qr.min.js',
+  '/videos/white1.mp4',
 ];
 
 // ── 自动更新检测：通过 ETag/Last-Modified 感知 HTML 变化 ─────────────────────

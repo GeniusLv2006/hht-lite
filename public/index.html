@@ -331,11 +331,29 @@
             transition: opacity 0.2s;
         }
         #qrcode-container.loading { opacity: 0.4; }
+        #qrcode {
+            position: relative;
+            line-height: 0;
+            background: #fff;
+        }
         #qrcode img {
             display: block;
             width: min(248px, 62vw);
             height: min(248px, 62vw);
             image-rendering: pixelated;
+        }
+        #qrcode .hdr-primer-video {
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            width: 12px;
+            height: 12px;
+            max-width: 6%;
+            max-height: 6%;
+            object-fit: cover;
+            background: #fff;
+            pointer-events: none;
+            z-index: 1;
         }
         #tips {
             font-family: 'IBM Plex Mono', monospace;
@@ -1347,6 +1365,89 @@
         const setOpenIdBtn = document.getElementById('setOpenIdBtn');
         const refreshQRCodeBtn = document.getElementById('refreshQRCodeBtn');
         const REFRESH_BTN_ORIGINAL_HTML = refreshQRCodeBtn.innerHTML;
+        const HDR_ASSIST_KEY = 'hdr_brightness_assist';
+        const HDR_PRIMER_SRC = './videos/white1.mp4';
+        let hdrPrimerVideo = null;
+        let qrWakeLock = null;
+        let hasVisibleQRCode = false;
+
+        function isBrightnessAssistEnabled() {
+            try {
+                return localStorage.getItem(HDR_ASSIST_KEY) !== '0';
+            } catch {
+                return true;
+            }
+        }
+
+        function ensureHdrPrimerVideo() {
+            if (hdrPrimerVideo && hdrPrimerVideo.isConnected) return hdrPrimerVideo;
+            const video = document.createElement('video');
+            video.className = 'hdr-primer-video';
+            video.src = HDR_PRIMER_SRC;
+            video.muted = true;
+            video.loop = true;
+            video.autoplay = true;
+            video.playsInline = true;
+            video.preload = 'auto';
+            video.setAttribute('playsinline', '');
+            video.setAttribute('webkit-playsinline', '');
+            video.setAttribute('aria-hidden', 'true');
+            video.tabIndex = -1;
+            try { video.disablePictureInPicture = true; } catch {}
+            qrcodeElement.appendChild(video);
+            hdrPrimerVideo = video;
+            return video;
+        }
+
+        async function requestQrWakeLock() {
+            if (!isBrightnessAssistEnabled() || document.hidden || !('wakeLock' in navigator) || qrWakeLock) return;
+            try {
+                qrWakeLock = await navigator.wakeLock.request('screen');
+                qrWakeLock.addEventListener('release', () => {
+                    qrWakeLock = null;
+                });
+            } catch {}
+        }
+
+        function releaseQrWakeLock() {
+            if (!qrWakeLock) return;
+            const lock = qrWakeLock;
+            qrWakeLock = null;
+            try {
+                const released = lock.release();
+                if (released && typeof released.catch === 'function') released.catch(() => {});
+            } catch {}
+        }
+
+        function pauseBrightnessAssist() {
+            if (hdrPrimerVideo) {
+                try { hdrPrimerVideo.pause(); } catch {}
+            }
+            releaseQrWakeLock();
+        }
+
+        function stopBrightnessAssist() {
+            hasVisibleQRCode = false;
+            pauseBrightnessAssist();
+            if (hdrPrimerVideo) {
+                try { hdrPrimerVideo.remove(); } catch {}
+                hdrPrimerVideo = null;
+            }
+        }
+
+        function startBrightnessAssist() {
+            hasVisibleQRCode = true;
+            if (!isBrightnessAssistEnabled() || document.hidden) {
+                pauseBrightnessAssist();
+                return;
+            }
+            const video = ensureHdrPrimerVideo();
+            try {
+                const playing = video.play();
+                if (playing && typeof playing.catch === 'function') playing.catch(() => {});
+            } catch {}
+            requestQrWakeLock();
+        }
 
         function applyButtonFreeze() {
             clearTimeout(window.btnFreezeTimer);
@@ -1602,8 +1703,12 @@
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) {
                 clearTimeout(window.refreshTimeout);
+                pauseBrightnessAssist();
             } else if (appInitialized && autoRefreshEnabled && !rateLimitActive) {
+                if (hasVisibleQRCode) startBrightnessAssist();
                 refreshQRCode(false);
+            } else if (hasVisibleQRCode) {
+                startBrightnessAssist();
             }
         });
 
@@ -1718,6 +1823,7 @@
 
             // openId 未设置时直接进入设置流程，无需发送任何网络请求
             if (!openId) {
+                stopBrightnessAssist();
                 qrcodeContainer.classList.remove('loading');
                 hideSplashScreen();
                 await handleSetOpenId();
@@ -1745,6 +1851,7 @@
 
             // 先检查黑名单结果
             if (blacklistResult.status === 'fulfilled' && blacklistResult.value.blocked) {
+                stopBrightnessAssist();
                 refreshQRCodeBtn.disabled = true;
                 refreshQRCodeBtn.style.background = '#c23b22';
                 refreshQRCodeBtn.textContent = blacklistResult.value.ban_message || '此 OpenID 已被禁用';
@@ -1788,6 +1895,7 @@
                         }
                     }
                 } catch (error) {
+                    stopBrightnessAssist();
                     retryCount++;
                     clearSatokenCache(); // token 可能过期，清除缓存确保下次冷启动重新取
                     const retryTime = await getSatoken();
@@ -1795,12 +1903,14 @@
                         const retryDelay = retryCount <= 1 ? 0 : Math.min(BASE_RETRY_DELAY * Math.pow(2, retryCount - 1), 30000);
                         window.refreshTimeout = setTimeout(() => refreshQRCode(false), retryDelay);
                     } else {
+                        stopBrightnessAssist();
                         logAccess('qr_timeout');
                         tipsElement.textContent = '网络连接失败，请检查网络后点击刷新';
                     }
                 }
             } else {
                 // QR 请求失败
+                stopBrightnessAssist();
                 retryCount++;
                 clearSatokenCache(); // token 可能过期，清除缓存确保下次冷启动重新取
                 const retryTime = await getSatoken();
@@ -1808,6 +1918,7 @@
                     const retryDelay = retryCount <= 1 ? 0 : Math.min(BASE_RETRY_DELAY * Math.pow(2, retryCount - 1), 30000);
                     window.refreshTimeout = setTimeout(() => refreshQRCode(false), retryDelay);
                 } else {
+                    stopBrightnessAssist();
                     logAccess('qr_timeout');
                     tipsElement.textContent = '网络连接失败，请检查网络后点击刷新';
                 }
@@ -1834,6 +1945,7 @@
                 qrcodeElement.appendChild(qrImg);
             }
             qrImg.src = qr.createDataURL(10, 40);
+            startBrightnessAssist();
         }
 
         // Service Worker
