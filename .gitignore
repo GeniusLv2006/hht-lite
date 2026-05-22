@@ -11,7 +11,7 @@ data/
 # 个人运维笔记（包含本地路径等私有信息）
 MAINTENANCE.md
 
-# Claude Code 工作文件
+# Codex 工作文件
 .claude/
 
 # macOS
