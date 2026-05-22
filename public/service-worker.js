@@ -1,7 +1,9 @@
-const CACHE_NAME = 'offline-cache-v4.3.13';
+const CACHE_NAME = 'offline-cache-v4.3.14';
 const urlsToCache = [
   '/',
   '/index.html',
+  '/app.css',
+  '/app.js',
   '/ico.png',
   '/ico.png?v=5',
   '/manifest.json',
