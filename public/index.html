@@ -336,7 +336,10 @@
             line-height: 0;
             background: #fff;
         }
-        #qrcode img {
+        #qrcode img,
+        #qrcode svg {
+            position: relative;
+            z-index: 1;
             display: block;
             width: min(248px, 62vw);
             height: min(248px, 62vw);
@@ -344,16 +347,13 @@
         }
         #qrcode .hdr-primer-video {
             position: absolute;
-            top: 4px;
-            left: 4px;
-            width: 12px;
-            height: 12px;
-            max-width: 6%;
-            max-height: 6%;
+            inset: 0;
+            width: 100%;
+            height: 100%;
             object-fit: cover;
             background: #fff;
             pointer-events: none;
-            z-index: 1;
+            z-index: 0;
         }
         #tips {
             font-family: 'IBM Plex Mono', monospace;
@@ -1449,6 +1449,33 @@
             requestQrWakeLock();
         }
 
+        function renderQRCodeSvg(qr, cellSize = 10, margin = 40) {
+            const moduleCount = qr.getModuleCount();
+            const size = moduleCount * cellSize + margin * 2;
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('viewBox', `0 0 ${size} ${size}`);
+            svg.setAttribute('width', size);
+            svg.setAttribute('height', size);
+            svg.setAttribute('preserveAspectRatio', 'xMinYMin meet');
+            svg.setAttribute('aria-label', '门禁二维码');
+            svg.setAttribute('role', 'img');
+
+            let pathData = '';
+            for (let row = 0; row < moduleCount; row++) {
+                for (let col = 0; col < moduleCount; col++) {
+                    if (qr.isDark(row, col)) {
+                        pathData += `M${col * cellSize + margin},${row * cellSize + margin}h${cellSize}v${cellSize}h-${cellSize}z`;
+                    }
+                }
+            }
+
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', pathData);
+            path.setAttribute('fill', '#000');
+            svg.appendChild(path);
+            return svg;
+        }
+
         function applyButtonFreeze() {
             clearTimeout(window.btnFreezeTimer);
             const remaining = Math.ceil((manualFrozenUntil - Date.now()) / 1000);
@@ -1938,13 +1965,8 @@
             qr.addData(data);
             qr.make();
 
-            // 复用已有 img 元素，仅更新 src，避免 DOM 重建和 reflow
-            let qrImg = qrcodeElement.querySelector('img');
-            if (!qrImg) {
-                qrImg = document.createElement('img');
-                qrcodeElement.appendChild(qrImg);
-            }
-            qrImg.src = qr.createDataURL(10, 40);
+            qrcodeElement.querySelector('img, svg')?.remove();
+            qrcodeElement.appendChild(renderQRCodeSvg(qr));
             startBrightnessAssist();
         }
 
