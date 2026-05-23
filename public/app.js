@@ -337,8 +337,24 @@
                 .finally(() => clearTimeout(timeout));
         }
 
-        function markOwnServerUnavailable(source, error) {
+        const ownServerFailures = new Map();
+
+        function renderOwnServerStatus() {
             if (!serverStatusElement) return;
+            if (ownServerFailures.size === 0) {
+                serverStatusElement.classList.remove('show');
+                serverStatusElement.innerHTML = '';
+                return;
+            }
+            const latest = Array.from(ownServerFailures.values()).pop();
+            serverStatusElement.innerHTML = `
+                <div class="server-status-title">辅助服务离线，二维码不受影响</div>
+                <div class="server-status-detail">${latest.sourceLabel}接口${latest.detail} · ${latest.time}</div>
+            `;
+            serverStatusElement.classList.add('show');
+        }
+
+        function markOwnServerUnavailable(source, error) {
             const now = new Date().toLocaleTimeString('zh-CN', {
                 hour: '2-digit',
                 minute: '2-digit',
@@ -352,24 +368,26 @@
                 version: '版本',
                 notification: '公告'
             }[source] || source;
-            serverStatusElement.innerHTML = `
-                <div class="server-status-title">辅助服务离线，二维码不受影响</div>
-                <div class="server-status-detail">${sourceLabel}接口${detail} · ${now}</div>
-            `;
-            serverStatusElement.classList.add('show');
+            ownServerFailures.set(source, { sourceLabel, detail, time: now });
+            renderOwnServerStatus();
         }
 
-        function markOwnServerAvailable() {
-            if (!serverStatusElement) return;
-            serverStatusElement.classList.remove('show');
-            serverStatusElement.innerHTML = '';
+        function markOwnServerAvailable(source) {
+            if (!source) {
+                ownServerFailures.clear();
+            } else {
+                ownServerFailures.delete(source);
+                if (source === 'version') ownServerFailures.delete('startup');
+                if (source === 'startup') ownServerFailures.delete('version');
+            }
+            renderOwnServerStatus();
         }
 
         async function probeOwnServer() {
             try {
                 const res = await fetchOwnServer('/api/version', { cache: 'no-store' });
                 if (!res.ok) throw new Error('status ' + res.status);
-                markOwnServerAvailable();
+                markOwnServerAvailable('startup');
                 return await res.json();
             } catch (error) {
                 markOwnServerUnavailable('startup', error);
@@ -453,7 +471,7 @@
                 });
                 const data = await res.json();
                 setBlacklistCache(targetOpenId, data.blocked, data.reason, data.ban_message);
-                markOwnServerAvailable();
+                markOwnServerAvailable('blacklist');
                 return { blocked: data.blocked, reason: data.reason, ban_message: data.ban_message };
             } catch (error) {
                 // 网络失败时降级使用本地缓存，避免误判服务器故障为"未拉黑"
@@ -473,7 +491,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ openId, action })
                 });
-                markOwnServerAvailable();
+                markOwnServerAvailable('log');
             } catch (error) {
                 markOwnServerUnavailable('log', error);
             }
@@ -1065,7 +1083,7 @@
                 .then(r => r.json()))
                 .then(info => {
                     if (!info) return null;
-                    markOwnServerAvailable();
+                    markOwnServerAvailable('version');
                     return info;
                 })
                 .catch((error) => {
@@ -1075,7 +1093,7 @@
             notificationPromise = fetchOwnServer('/api/notification')
                 .then(r => r.ok ? r.json() : null)
                 .then(notif => {
-                    markOwnServerAvailable();
+                    markOwnServerAvailable('notification');
                     return notif;
                 })
                 .catch((error) => {
