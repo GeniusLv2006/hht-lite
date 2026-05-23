@@ -345,14 +345,36 @@
                 second: '2-digit'
             });
             const detail = error?.name === 'AbortError' ? '超时' : '连接失败';
-            serverStatusElement.textContent = `辅助服务不可用（${source} ${detail} · ${now}）。二维码仍直连官方接口生成。`;
+            const sourceLabel = {
+                startup: '状态检查',
+                blacklist: '黑名单',
+                log: '日志',
+                version: '版本',
+                notification: '公告'
+            }[source] || source;
+            serverStatusElement.innerHTML = `
+                <div class="server-status-title">辅助服务离线，二维码不受影响</div>
+                <div class="server-status-detail">${sourceLabel}接口${detail} · ${now}</div>
+            `;
             serverStatusElement.classList.add('show');
         }
 
         function markOwnServerAvailable() {
             if (!serverStatusElement) return;
             serverStatusElement.classList.remove('show');
-            serverStatusElement.textContent = '';
+            serverStatusElement.innerHTML = '';
+        }
+
+        async function probeOwnServer() {
+            try {
+                const res = await fetchOwnServer('/api/version', { cache: 'no-store' });
+                if (!res.ok) throw new Error('status ' + res.status);
+                markOwnServerAvailable();
+                return await res.json();
+            } catch (error) {
+                markOwnServerUnavailable('startup', error);
+                return null;
+            }
         }
 
         function showInputDialog(msg, placeholder = '请输入', isPassword = false) {
@@ -1033,14 +1055,16 @@
             appInitialized = true; // 标记 App 已初始化，允许 visibilitychange 触发刷新
             const pwaUpdated = localStorage.getItem('pwa_updated') === '1';
             if (pwaUpdated) localStorage.removeItem('pwa_updated');
+            const ownServerProbePromise = probeOwnServer();
 
             // 开始加载二维码（完成后隐藏开屏动画）
             await refreshQRCode();
 
             // QR 已显示，现在再并行发起版本和通知请求，不阻塞首屏
-            versionInfoPromise = fetchOwnServer('/api/version')
-                .then(r => r.json())
+            versionInfoPromise = ownServerProbePromise.then(cachedInfo => cachedInfo || fetchOwnServer('/api/version')
+                .then(r => r.json()))
                 .then(info => {
+                    if (!info) return null;
                     markOwnServerAvailable();
                     return info;
                 })

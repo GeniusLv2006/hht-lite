@@ -332,21 +332,29 @@
 
         #server-status {
             display: none;
-            max-width: min(360px, 88vw);
-            margin-top: 8px;
-            padding: 8px 10px;
-            border: 1px solid var(--line-faint);
-            border-left: 3px solid var(--accent);
-            background: var(--bg-2);
+            max-width: min(340px, 82vw);
+            margin-top: -8px;
+            padding: 0 2px;
             color: var(--ink-2);
             font-family: 'IBM Plex Mono', monospace;
-            font-size: 11px;
-            line-height: 1.5;
-            text-align: left;
+            font-size: 10px;
+            line-height: 1.55;
+            text-align: center;
+            letter-spacing: 0.02em;
         }
 
         #server-status.show {
             display: block;
+        }
+
+        .server-status-title {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .server-status-detail {
+            margin-top: 2px;
+            opacity: 0.78;
         }
 
         /* ══ BUTTON AREA ══
