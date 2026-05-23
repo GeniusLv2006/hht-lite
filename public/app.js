@@ -122,10 +122,12 @@
         // 黑名单缓存
         const BLACKLIST_CACHE_KEY = 'blacklist_cache';
         const BLACKLIST_CACHE_DURATION = 5 * 60 * 1000; // 5 分钟
+        const OWN_SERVER_TIMEOUT_MS = 1500;
 
         let isInitialLoad = true;
 
         const tipsElement = document.getElementById('tips');
+        const serverStatusElement = document.getElementById('server-status');
         const qrcodeElement = document.getElementById('qrcode');
         const setOpenIdBtn = document.getElementById('setOpenIdBtn');
         const refreshQRCodeBtn = document.getElementById('refreshQRCodeBtn');
@@ -328,6 +330,31 @@
             }, duration);
         }
 
+        function fetchOwnServer(path, options = {}, timeoutMs = OWN_SERVER_TIMEOUT_MS) {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), timeoutMs);
+            return fetch(path, { ...options, signal: controller.signal })
+                .finally(() => clearTimeout(timeout));
+        }
+
+        function markOwnServerUnavailable(source, error) {
+            if (!serverStatusElement) return;
+            const now = new Date().toLocaleTimeString('zh-CN', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            const detail = error?.name === 'AbortError' ? '超时' : '连接失败';
+            serverStatusElement.textContent = `辅助服务不可用（${source} ${detail} · ${now}）。二维码仍直连官方接口生成。`;
+            serverStatusElement.classList.add('show');
+        }
+
+        function markOwnServerAvailable() {
+            if (!serverStatusElement) return;
+            serverStatusElement.classList.remove('show');
+            serverStatusElement.textContent = '';
+        }
+
         function showInputDialog(msg, placeholder = '请输入', isPassword = false) {
             return new Promise((resolve) => {
                 dialogMessage.textContent = msg;
@@ -397,16 +424,18 @@
             }
 
             try {
-                const res = await fetch('/api/check-blacklist', {
+                const res = await fetchOwnServer('/api/check-blacklist', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ openId: targetOpenId })
                 });
                 const data = await res.json();
                 setBlacklistCache(targetOpenId, data.blocked, data.reason, data.ban_message);
+                markOwnServerAvailable();
                 return { blocked: data.blocked, reason: data.reason, ban_message: data.ban_message };
             } catch (error) {
                 // 网络失败时降级使用本地缓存，避免误判服务器故障为"未拉黑"
+                markOwnServerUnavailable('blacklist', error);
                 const cached = getBlacklistCache(targetOpenId);
                 if (cached) return { blocked: cached.blocked, reason: cached.reason, ban_message: cached.ban_message };
                 return { blocked: false, reason: null, ban_message: null };
@@ -417,12 +446,15 @@
         async function logAccess(action) {
             if (!openId) return;
             try {
-                await fetch('/api/log-access', {
+                await fetchOwnServer('/api/log-access', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ openId, action })
                 });
-            } catch (error) {}
+                markOwnServerAvailable();
+            } catch (error) {
+                markOwnServerUnavailable('log', error);
+            }
         }
 
         async function handleSetOpenId() {
@@ -1006,8 +1038,26 @@
             await refreshQRCode();
 
             // QR 已显示，现在再并行发起版本和通知请求，不阻塞首屏
-            versionInfoPromise = fetch('/api/version').then(r => r.json()).catch(() => null);
-            notificationPromise = fetch('/api/notification').then(r => r.ok ? r.json() : null).catch(() => null);
+            versionInfoPromise = fetchOwnServer('/api/version')
+                .then(r => r.json())
+                .then(info => {
+                    markOwnServerAvailable();
+                    return info;
+                })
+                .catch((error) => {
+                    markOwnServerUnavailable('version', error);
+                    return null;
+                });
+            notificationPromise = fetchOwnServer('/api/notification')
+                .then(r => r.ok ? r.json() : null)
+                .then(notif => {
+                    markOwnServerAvailable();
+                    return notif;
+                })
+                .catch((error) => {
+                    markOwnServerUnavailable('notification', error);
+                    return null;
+                });
             versionInfoPromise.then(info => {
                 document.getElementById('version-btn').textContent = (info && info.version) ? info.version : '?';
             });

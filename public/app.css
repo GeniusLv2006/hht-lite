@@ -330,6 +330,25 @@
             letter-spacing: 0.04em;
         }
 
+        #server-status {
+            display: none;
+            max-width: min(360px, 88vw);
+            margin-top: 8px;
+            padding: 8px 10px;
+            border: 1px solid var(--line-faint);
+            border-left: 3px solid var(--accent);
+            background: var(--bg-2);
+            color: var(--ink-2);
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            line-height: 1.5;
+            text-align: left;
+        }
+
+        #server-status.show {
+            display: block;
+        }
+
         /* ══ BUTTON AREA ══
          * position:fixed; bottom:0 is the ONLY reliable way to reach the true
          * screen bottom in iOS PWA. flex-child bottom-edge calculation is unreliable
