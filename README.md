@@ -61,13 +61,15 @@ cp .env.example .env
 修改 `version.json`，然后：
 
 ```bash
-npm run sync-version   # 同步 service-worker.js 的 CACHE_NAME
+npm run sync-version   # 同步 service-worker.js 缓存名和前端静态资源版本参数
 git add -A && git commit -m "release: vX.X.X"
 git push
 
 # VPS 上执行
 git pull && ./deploy.sh
 ```
+
+`version.json` 是发布版本的唯一来源。`npm run sync-version` 会同步 `service-worker.js` 的 `CACHE_NAME`、预缓存资源 URL，以及 `index.html` 中 `app.css`、`app.js`、`qr.min.js` 的 `?v=...` 参数，避免安装版 PWA 继续加载旧脚本。
 
 ---
 

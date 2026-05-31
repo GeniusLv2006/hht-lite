@@ -122,6 +122,7 @@
         // 黑名单缓存
         const BLACKLIST_CACHE_KEY = 'blacklist_cache';
         const BLACKLIST_CACHE_DURATION = 5 * 60 * 1000; // 5 分钟
+        const BLACKLIST_CACHE_SCHEMA = 2;
         const OWN_SERVER_TIMEOUT_MS = 1500;
 
         let isInitialLoad = true;
@@ -434,22 +435,44 @@
             try {
                 const cache = JSON.parse(localStorage.getItem(BLACKLIST_CACHE_KEY) || '{}');
                 const entry = cache[targetOpenId];
-                if (entry && Date.now() - entry.timestamp < BLACKLIST_CACHE_DURATION) {
-                    return entry;
+                if (!entry) return null;
+                const now = Date.now();
+                if (entry.blocked === true && now - entry.timestamp < BLACKLIST_CACHE_DURATION) {
+                    return { blocked: true, reason: entry.reason || null, ban_message: entry.ban_message || null };
+                }
+                if (entry.schema === BLACKLIST_CACHE_SCHEMA && entry.blocked === false && entry.allow_until && now < entry.allow_until) {
+                    return { blocked: false, reason: null, ban_message: null };
                 }
             } catch (e) {}
             return null;
         }
 
-        function setBlacklistCache(targetOpenId, blocked, reason, ban_message) {
+        function setBlacklistCache(targetOpenId, blocked, reason, ban_message, offlineAllowTtl) {
             try {
                 const cache = JSON.parse(localStorage.getItem(BLACKLIST_CACHE_KEY) || '{}');
                 const now = Date.now();
                 // 顺手清理过期条目，防止无限增长
                 for (const key of Object.keys(cache)) {
-                    if (now - cache[key].timestamp >= BLACKLIST_CACHE_DURATION) delete cache[key];
+                    const entry = cache[key];
+                    const blockedExpired = entry.blocked === true && now - entry.timestamp >= BLACKLIST_CACHE_DURATION;
+                    const allowExpired = entry.schema === BLACKLIST_CACHE_SCHEMA && entry.blocked === false && (!entry.allow_until || now >= entry.allow_until);
+                    const legacyAllow = entry.blocked === false && entry.schema !== BLACKLIST_CACHE_SCHEMA;
+                    if (blockedExpired || allowExpired || legacyAllow) delete cache[key];
                 }
-                cache[targetOpenId] = { blocked, reason, ban_message, timestamp: now };
+                if (blocked) {
+                    cache[targetOpenId] = { schema: BLACKLIST_CACHE_SCHEMA, blocked: true, reason, ban_message, timestamp: now };
+                } else if (Number.isFinite(offlineAllowTtl) && offlineAllowTtl > 0) {
+                    cache[targetOpenId] = {
+                        schema: BLACKLIST_CACHE_SCHEMA,
+                        blocked: false,
+                        reason: null,
+                        ban_message: null,
+                        timestamp: now,
+                        allow_until: now + offlineAllowTtl * 1000
+                    };
+                } else {
+                    delete cache[targetOpenId];
+                }
                 localStorage.setItem(BLACKLIST_CACHE_KEY, JSON.stringify(cache));
             } catch (e) {}
         }
@@ -469,16 +492,21 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ openId: targetOpenId })
                 });
+                if (!res.ok) throw new Error('status ' + res.status);
                 const data = await res.json();
-                setBlacklistCache(targetOpenId, data.blocked, data.reason, data.ban_message);
+                const offlineAllowTtl = Number(data.offline_allow_ttl);
+                setBlacklistCache(targetOpenId, data.blocked, data.reason, data.ban_message, offlineAllowTtl);
                 markOwnServerAvailable('blacklist');
                 return { blocked: data.blocked, reason: data.reason, ban_message: data.ban_message };
             } catch (error) {
-                // 网络失败时降级使用本地缓存，避免误判服务器故障为"未拉黑"
                 markOwnServerUnavailable('blacklist', error);
                 const cached = getBlacklistCache(targetOpenId);
                 if (cached) return { blocked: cached.blocked, reason: cached.reason, ban_message: cached.ban_message };
-                return { blocked: false, reason: null, ban_message: null };
+                return {
+                    blocked: true,
+                    reason: '无法连接验证服务，请稍后重试',
+                    ban_message: '验证服务不可用'
+                };
             }
         }
 

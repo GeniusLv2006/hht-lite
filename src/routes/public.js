@@ -2,6 +2,8 @@ const express = require('express');
 const { PUBLIC_LOG_ACTIONS } = require('../config');
 const { activeBlacklistCondition, getClientIP } = require('../utils');
 
+const ADMIN_OFFLINE_ALLOW_TTL_SECONDS = 30 * 24 * 60 * 60;
+
 function createPublicRouter({ db, authMiddleware, generalLimiter, logLimiter, blacklistCheckLimiter, geoService }) {
   const router = express.Router();
   const { fetchAndStoreGeo } = geoService;
@@ -13,12 +15,19 @@ function createPublicRouter({ db, authMiddleware, generalLimiter, logLimiter, bl
     const blocked = db.prepare(
       `SELECT reason, ban_message FROM blacklist WHERE open_id = ? AND ${activeBlacklistCondition()}`
     ).get(openId);
-    return res.json({
+    const payload = {
       success: true,
       blocked: !!blocked,
       reason: blocked?.reason || null,
       ban_message: blocked?.ban_message || null
-    });
+    };
+    if (!blocked) {
+      const adminOpenId = db.prepare('SELECT value FROM config WHERE key = ?').get('admin_openid')?.value;
+      if (adminOpenId && openId === adminOpenId) {
+        payload.offline_allow_ttl = ADMIN_OFFLINE_ALLOW_TTL_SECONDS;
+      }
+    }
+    return res.json(payload);
   });
 
   // 验证管理员 OpenID
