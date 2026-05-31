@@ -71,6 +71,8 @@ git pull && ./deploy.sh
 
 `version.json` 是发布版本的唯一来源。`npm run sync-version` 会同步 `service-worker.js` 的 `CACHE_NAME`、预缓存资源 URL，以及 `index.html` 中 `app.css`、`app.js`、`qr.min.js` 的 `?v=...` 参数，避免安装版 PWA 继续加载旧脚本。
 
+注意：`version.json` 是应用程序发布版本的唯一事实来源。`package.json.version` 目前不用于部署或 PWA 缓存版本控制。
+
 ---
 
 ## License
