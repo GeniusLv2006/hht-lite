@@ -30,11 +30,11 @@
             if (m) m.setAttribute('content', dark ? '#111110' : '#e8e4dd');
         })();
     </script>
-    <link rel="stylesheet" href="./app.css?v=v4.4.0">
+    <link rel="stylesheet" href="./app.css?v=v4.4.1">
     <!-- 预加载启动图标，与 HTML 并行下载 -->
     <link rel="preload" as="image" href="./ico.png">
     <!-- QR 库延迟加载，不阻塞页面解析 -->
-    <script defer src="./qr.min.js?v=v4.4.0"></script>
+    <script defer src="./qr.min.js?v=v4.4.1"></script>
 </head>
 
 <body>
@@ -87,10 +87,17 @@
             <svg class="button-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
             刷新二维码
         </button>
-        <label id="auto-refresh-toggle" title="开启后二维码将每8秒自动刷新">
+        <label id="auto-refresh-toggle" class="preference-toggle" title="开启后二维码将每8秒自动刷新">
             <span>自动刷新</span>
             <span class="toggle-switch">
                 <input type="checkbox" id="auto-refresh-checkbox">
+                <span class="toggle-slider"></span>
+            </span>
+        </label>
+        <label id="hdr-assist-toggle" class="preference-toggle" title="开启后尝试使用高亮视频辅助二维码显示">
+            <span>HDR辅助</span>
+            <span class="toggle-switch">
+                <input type="checkbox" id="hdr-assist-checkbox">
                 <span class="toggle-slider"></span>
             </span>
         </label>
@@ -309,7 +316,7 @@
         <button id="reopen-agreement">重新查看协议</button>
     </div>
 
-    <script defer src="./app.js?v=v4.4.0"></script>
+    <script defer src="./app.js?v=v4.4.1"></script>
 </body>
 
 </html>

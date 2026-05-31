@@ -141,9 +141,9 @@
 
         function isBrightnessAssistEnabled() {
             try {
-                return localStorage.getItem(HDR_ASSIST_KEY) !== '0';
+                return localStorage.getItem(HDR_ASSIST_KEY) === '1';
             } catch {
-                return true;
+                return false;
             }
         }
 
@@ -276,6 +276,7 @@
         let appInitialized = false; // 协议同意并完成 initApp() 后置为 true
         let swUpdatePending = false; // SW 更新即将触发 reload，阻止旧页面提前弹出版本日志
         const autoRefreshCheckbox = document.getElementById('auto-refresh-checkbox');
+        const hdrAssistCheckbox = document.getElementById('hdr-assist-checkbox');
         autoRefreshCheckbox.checked = autoRefreshEnabled;
         autoRefreshCheckbox.addEventListener('change', () => {
             autoRefreshEnabled = autoRefreshCheckbox.checked;
@@ -290,6 +291,21 @@
                 }
             } else if (!autoRefreshEnabled) {
                 clearTimeout(window.refreshTimeout);
+            }
+        });
+        hdrAssistCheckbox.checked = isBrightnessAssistEnabled();
+        hdrAssistCheckbox.addEventListener('change', () => {
+            localStorage.setItem(HDR_ASSIST_KEY, hdrAssistCheckbox.checked ? '1' : '0');
+            if (hasVisibleQRCode) {
+                if (hdrAssistCheckbox.checked) {
+                    startBrightnessAssist();
+                } else {
+                    pauseBrightnessAssist();
+                    if (hdrPrimerVideo) {
+                        try { hdrPrimerVideo.remove(); } catch {}
+                        hdrPrimerVideo = null;
+                    }
+                }
             }
         });
 
