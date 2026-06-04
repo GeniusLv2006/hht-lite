@@ -123,7 +123,8 @@
         const BLACKLIST_CACHE_KEY = 'blacklist_cache';
         const BLACKLIST_CACHE_DURATION = 5 * 60 * 1000; // 5 分钟
         const BLACKLIST_CACHE_SCHEMA = 2;
-        const OWN_SERVER_TIMEOUT_MS = 1500;
+        const OWN_SERVER_TIMEOUT_MS = 5000;
+        const OWN_SERVER_STATUS_GRACE_MS = 1500;
 
         let isInitialLoad = true;
 
@@ -355,6 +356,7 @@
         }
 
         const ownServerFailures = new Map();
+        const ownServerFailureTimers = new Map();
 
         function renderOwnServerStatus() {
             if (!serverStatusElement) return;
@@ -372,6 +374,7 @@
         }
 
         function markOwnServerUnavailable(source, error) {
+            clearTimeout(ownServerFailureTimers.get(source));
             const now = new Date().toLocaleTimeString('zh-CN', {
                 hour: '2-digit',
                 minute: '2-digit',
@@ -385,17 +388,33 @@
                 version: '版本',
                 notification: '公告'
             }[source] || source;
-            ownServerFailures.set(source, { sourceLabel, detail, time: now });
-            renderOwnServerStatus();
+            const timer = setTimeout(() => {
+                ownServerFailureTimers.delete(source);
+                ownServerFailures.set(source, { sourceLabel, detail, time: now });
+                renderOwnServerStatus();
+            }, OWN_SERVER_STATUS_GRACE_MS);
+            ownServerFailureTimers.set(source, timer);
         }
 
         function markOwnServerAvailable(source) {
             if (!source) {
+                ownServerFailureTimers.forEach(timer => clearTimeout(timer));
+                ownServerFailureTimers.clear();
                 ownServerFailures.clear();
             } else {
+                clearTimeout(ownServerFailureTimers.get(source));
+                ownServerFailureTimers.delete(source);
                 ownServerFailures.delete(source);
-                if (source === 'version') ownServerFailures.delete('startup');
-                if (source === 'startup') ownServerFailures.delete('version');
+                if (source === 'version') {
+                    clearTimeout(ownServerFailureTimers.get('startup'));
+                    ownServerFailureTimers.delete('startup');
+                    ownServerFailures.delete('startup');
+                }
+                if (source === 'startup') {
+                    clearTimeout(ownServerFailureTimers.get('version'));
+                    ownServerFailureTimers.delete('version');
+                    ownServerFailures.delete('version');
+                }
             }
             renderOwnServerStatus();
         }
