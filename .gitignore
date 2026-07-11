@@ -11,6 +11,9 @@ data/
 # 个人运维笔记（包含本地路径等私有信息）
 MAINTENANCE.md
 
+# 本地 Agent 工作流约定（不进入公共仓库）
+AGENTS.md
+
 # Codex 工作文件
 .claude/
 
