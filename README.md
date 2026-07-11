@@ -62,6 +62,8 @@ docker compose down
 
 `docker compose down` 不会删除 `./data`。不要使用 `down -v`，也不要在未备份的情况下删除该目录。
 
+仓库维护者使用 `./deploy.sh` 构建并部署精确版本镜像。脚本会先用临时数据启动候选容器；候选健康后才切换正式容器，生产数据健康检查失败时自动恢复原容器。需要回滚时，可运行 `./deploy.sh --image vMAJOR.MINOR.PATCH`，但目标必须是本机已存在且经过验证的 `v5.1.0` 或更新的自包含镜像。
+
 ## 环境变量
 
 参见 [`.env.example`](.env.example)，关键变量：

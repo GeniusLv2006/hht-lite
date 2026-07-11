@@ -11,6 +11,16 @@ FROM node:24-alpine
 
 WORKDIR /app
 
+ARG APP_VERSION=development
+ARG VCS_REF=unknown
+ARG BUILD_DATE=unknown
+
+LABEL org.opencontainers.image.title="hht-lite" \
+      org.opencontainers.image.version="$APP_VERSION" \
+      org.opencontainers.image.revision="$VCS_REF" \
+      org.opencontainers.image.created="$BUILD_DATE" \
+      org.opencontainers.image.source="https://github.com/GeniusLv2006/hht-lite"
+
 ENV NODE_ENV=production
 
 COPY --from=dependencies /app/node_modules ./node_modules
