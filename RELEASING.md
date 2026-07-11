@@ -41,6 +41,7 @@ File size alone does not decide the route: a one-line runtime or security change
 ## Deploy and publish
 
 1. Deploy the exact versioned image from the merged `main` commit with `./deploy.sh`. The script smoke-tests a candidate before switching and automatically restores the previous container if production-data health or endpoint verification fails.
+   Release builds refuse to run outside `main`, from a dirty worktree, or when `HEAD` differs from a locally available `origin/main`. The `--image` rollback path remains available without these source-tree checks.
 2. Verify container health, restart count, `/healthz`, `/api/version`, the application page, and recent logs.
 3. If verification succeeds, create an annotated `vMAJOR.MINOR.PATCH` tag on the merge commit and publish a GitHub Release from the same tag.
 4. If deployment fails, roll back to the previously verified version. Do not create the release tag until the failed deployment has been corrected and verified.

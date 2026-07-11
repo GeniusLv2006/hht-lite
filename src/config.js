@@ -2,10 +2,56 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 
+function parseIntegerSetting(name, rawValue, fallback, { min, max }) {
+  if (rawValue === undefined || rawValue === '') return fallback;
+  if (!/^\d+$/.test(rawValue)) {
+    throw new Error(`${name} must be an integer between ${min} and ${max}`);
+  }
+  const value = Number(rawValue);
+  if (!Number.isSafeInteger(value) || value < min || value > max) {
+    throw new Error(`${name} must be an integer between ${min} and ${max}`);
+  }
+  return value;
+}
+
+function parseAllowedOrigins(rawValue, { production = false } = {}) {
+  if (!rawValue) {
+    if (production) throw new Error('ALLOWED_ORIGINS is required in production');
+    return ['https://huihutong.xjtlu.uk'];
+  }
+
+  const origins = rawValue.split(',').map(origin => origin.trim()).filter(Boolean);
+  if (origins.length === 0) throw new Error('ALLOWED_ORIGINS must contain at least one origin');
+
+  return origins.map((origin) => {
+    let parsed;
+    try {
+      parsed = new URL(origin);
+    } catch {
+      throw new Error(`ALLOWED_ORIGINS contains an invalid URL: ${origin}`);
+    }
+    if (parsed.origin !== origin || parsed.username || parsed.password || parsed.pathname !== '/' || parsed.search || parsed.hash) {
+      throw new Error(`ALLOWED_ORIGINS must contain origins only: ${origin}`);
+    }
+    if (production && parsed.protocol !== 'https:') {
+      throw new Error(`ALLOWED_ORIGINS must use HTTPS in production: ${origin}`);
+    }
+    return parsed.origin;
+  });
+}
+
+function loadRuntimeConfig(env = process.env) {
+  const production = env.NODE_ENV === 'production';
+  return {
+    PORT: parseIntegerSetting('PORT', env.PORT, 3100, { min: 1, max: 65535 }),
+    LOG_RETENTION_DAYS: parseIntegerSetting('LOG_RETENTION_DAYS', env.LOG_RETENTION_DAYS, 30, { min: 1, max: 3650 }),
+    allowedOrigins: parseAllowedOrigins(env.ALLOWED_ORIGINS, { production })
+  };
+}
+
 const ROOT_DIR = path.join(__dirname, '..');
 const DATA_DIR = path.join(ROOT_DIR, 'data');
-const PORT = process.env.PORT || 3100;
-const LOG_RETENTION_DAYS = parseInt(process.env.LOG_RETENTION_DAYS, 10) || 30;
+const { PORT, LOG_RETENTION_DAYS, allowedOrigins } = loadRuntimeConfig();
 const ADMIN_OPENID = process.env.ADMIN_OPENID || '';
 const SHANGHAI_OFFSET = '+08:00';
 const PUBLIC_LOG_ACTIONS = new Set([
@@ -15,10 +61,6 @@ const PUBLIC_LOG_ACTIONS = new Set([
   'qr_timeout',
   'qr_blocked'
 ]);
-
-const allowedOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim()).filter(Boolean)
-  : ['https://huihutong.xjtlu.uk'];
 
 const JWT_SECRET = process.env.JWT_SECRET || (() => {
   const keyFile = path.join(DATA_DIR, '.jwt_secret');
@@ -49,5 +91,8 @@ module.exports = {
   SHANGHAI_OFFSET,
   PUBLIC_LOG_ACTIONS,
   allowedOrigins,
-  JWT_SECRET
+  JWT_SECRET,
+  loadRuntimeConfig,
+  parseAllowedOrigins,
+  parseIntegerSetting
 };

@@ -13,12 +13,42 @@ CANDIDATE_NAME="${CONTAINER_NAME}-candidate"
 ROLLBACK_NAME="${CONTAINER_NAME}-rollback"
 BUILD_IMAGE=true
 
+ensure_release_source() {
+  local branch upstream_status
+  branch="$(git -C "$SCRIPT_DIR" branch --show-current)"
+  if [ "$branch" != "main" ]; then
+    echo "Release builds must run from main (current branch: ${branch:-detached})." >&2
+    return 1
+  fi
+  if [ -n "$(git -C "$SCRIPT_DIR" status --porcelain --untracked-files=normal)" ]; then
+    echo "Release builds require a clean working tree." >&2
+    return 1
+  fi
+  if git -C "$SCRIPT_DIR" rev-parse --verify origin/main >/dev/null 2>&1; then
+    upstream_status="$(git -C "$SCRIPT_DIR" rev-list --left-right --count origin/main...HEAD)"
+    if [ "$upstream_status" != $'0\t0' ]; then
+      echo "Release builds require HEAD to match origin/main (divergence: $upstream_status)." >&2
+      return 1
+    fi
+  fi
+}
+
+restore_previous_container() {
+  docker rm --force "$CONTAINER_NAME" >/dev/null 2>&1 || true
+  if [ "$had_previous" = true ]; then
+    docker rename "$ROLLBACK_NAME" "$CONTAINER_NAME"
+    docker start "$CONTAINER_NAME" >/dev/null
+    wait_for_health "$CONTAINER_NAME" || true
+  fi
+}
+
 usage() {
   echo "Usage: $0 [--image vMAJOR.MINOR.PATCH]"
   echo "Without arguments, build and deploy the version declared in package.json."
   echo "Use --image only with a previously verified self-contained image (v5.1.0 or newer)."
 }
 
+main() {
 if [ "$#" -eq 2 ] && [ "$1" = "--image" ]; then
   VERSION="$2"
   BUILD_IMAGE=false
@@ -96,6 +126,7 @@ run_application() {
 }
 
 if [ "$BUILD_IMAGE" = true ]; then
+  ensure_release_source
   echo "=== Building ${IMAGE_REF} ==="
   docker build \
     --build-arg "APP_VERSION=$VERSION" \
@@ -137,22 +168,14 @@ fi
 echo "=== Starting ${IMAGE_REF} ==="
 if ! run_application "$CONTAINER_NAME" "$DATA_DIR" \
   --publish "${BIND_HOST}:${HOST_PORT}:${CONTAINER_PORT}"; then
-  if [ "$had_previous" = true ]; then
-    docker rename "$ROLLBACK_NAME" "$CONTAINER_NAME"
-    docker start "$CONTAINER_NAME" >/dev/null
-  fi
+  restore_previous_container
   exit 1
 fi
 
 if ! wait_for_health "$CONTAINER_NAME"; then
   echo "New container failed health verification; restoring previous container." >&2
   docker logs "$CONTAINER_NAME" 2>&1 || true
-  docker rm --force "$CONTAINER_NAME" >/dev/null 2>&1 || true
-  if [ "$had_previous" = true ]; then
-    docker rename "$ROLLBACK_NAME" "$CONTAINER_NAME"
-    docker start "$CONTAINER_NAME" >/dev/null
-    wait_for_health "$CONTAINER_NAME" || true
-  fi
+  restore_previous_container
   exit 1
 fi
 
@@ -160,12 +183,7 @@ health_payload="$(docker exec "$CONTAINER_NAME" wget --quiet --output-document=-
 version_payload="$(docker exec "$CONTAINER_NAME" wget --quiet --output-document=- http://127.0.0.1:3100/api/version)"
 if [[ "$health_payload" != *'"status":"ok"'* ]] || [[ "$version_payload" != *"\"version\":\"$VERSION\""* ]]; then
   echo "Post-deployment endpoint verification failed; restoring previous container." >&2
-  docker rm --force "$CONTAINER_NAME" >/dev/null 2>&1 || true
-  if [ "$had_previous" = true ]; then
-    docker rename "$ROLLBACK_NAME" "$CONTAINER_NAME"
-    docker start "$CONTAINER_NAME" >/dev/null
-    wait_for_health "$CONTAINER_NAME" || true
-  fi
+  restore_previous_container
   exit 1
 fi
 
@@ -189,3 +207,8 @@ mapfile -t old_tags < <(
 for tag in "${old_tags[@]}"; do
   docker image rm "${IMAGE_NAME}:${tag}" >/dev/null 2>&1 || true
 done
+}
+
+if [ "${HHT_DEPLOY_LIB_ONLY:-false}" != true ]; then
+  main "$@"
+fi

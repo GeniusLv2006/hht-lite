@@ -44,7 +44,9 @@ jobs:
           push: false
       - name: Smoke-test the container
         run: |
-          docker run --detach --name hht-lite-ci hht-lite:ci
+          docker run --detach --name hht-lite-ci \
+            --env ALLOWED_ORIGINS=https://example.com \
+            hht-lite:ci
           trap 'docker rm --force hht-lite-ci' EXIT
           for attempt in {1..12}; do
             if [ "$(docker inspect hht-lite-ci --format '{{if .State.Health}}{{.State.Health.Status}}{{end}}')" = healthy ]; then
