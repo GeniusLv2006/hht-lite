@@ -2,6 +2,7 @@
   "name": "hht-lite",
   "version": "1.0.0",
   "description": "hht-lite 服务端",
+  "license": "MPL-2.0",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

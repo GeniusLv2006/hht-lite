@@ -1,13 +1,17 @@
 # hht-lite
 
-慧湖通（HuiHuTong）的 PWA 前端 + 后端服务，提供黑名单检测、访问日志、公告推送、版本管理等功能，并内置管理后台。
+> [!WARNING]
+> **项目已停止主动维护，但仓库暂不归档。** 代码按现状提供，不承诺兼容性、安全更新、问题响应或后续版本。欢迎自行部署或 Fork；Issue 和 Pull Request 可能不会得到处理。
 
-> 前端 PWA 基于 [hht-web](https://github.com/mercutiojohn/hht-web)，感谢 [@PairZhu](https://github.com/PairZhu)。
+慧湖通（HuiHuTong）的 PWA 前端与后端服务，提供黑名单检测、访问日志、公告推送、版本管理等功能，并内置管理后台。
 
-## DEMO
-https://huihutong.xjtlu.uk
+前端 PWA 基于 [mercutiojohn/hht-web](https://github.com/mercutiojohn/hht-web) 二次开发。本项目是独立的非官方项目，与西交利物浦大学、苏州独墅湖科教发展有限公司及慧湖通运营方不存在隶属、授权、合作或背书关系。
 
----
+## 公共演示实例
+
+[https://huihutong.xjtlu.uk](https://huihutong.xjtlu.uk)
+
+该地址仅作为尽力而为的公共演示实例，不构成可用性或服务等级承诺。实例可能因上游接口变化、维护成本或其他原因随时限流、暂停或关闭，也不保证与仓库最新代码一致。请勿将其作为关键服务依赖，或依赖其长期保存数据。
 
 ## 技术栈
 
@@ -15,9 +19,10 @@ https://huihutong.xjtlu.uk
 - **数据库**：SQLite（[better-sqlite3](https://github.com/WiseLibs/better-sqlite3)）
 - **部署**：Docker
 
----
+## 自行部署
 
-## 快速部署
+> [!CAUTION]
+> 自行部署者需要独立评估代码、安全性、上游 API 合规性和数据保护要求，并自行承担维护责任。现有部署脚本主要服务于原项目环境，不是通用的一键部署方案。
 
 ### 1. 克隆仓库
 
@@ -39,9 +44,7 @@ cp .env.example .env
 ./deploy.sh
 ```
 
-默认监听 `172.17.0.1:3100`，可搭配 Nginx 反向代理使用。
-
----
+脚本默认监听 `172.17.0.1:3100`，并假定存在与原部署环境一致的 Docker 网络和反向代理。管理后台 Cookie 要求 HTTPS；用于其他环境前请审查并调整脚本、挂载路径、监听地址和反向代理配置。
 
 ## 环境变量
 
@@ -54,27 +57,12 @@ cp .env.example .env
 | `INIT_ADMIN_USER` | 管理员用户名（默认 `admin`） | 否 |
 | `ALLOWED_ORIGINS` | 允许的前端域名，逗号分隔 | 否 |
 
----
+## 支持与安全
 
-## 发布新版本
+本项目不再主动修复 Bug、安全问题或上游 API 兼容性问题，也不保证审查或合并外部贡献。请先阅读 [SECURITY.md](SECURITY.md) 和 [CONTRIBUTING.md](CONTRIBUTING.md)。请勿在公开 Issue 中披露未修复漏洞、凭据、OpenID、访问日志或其他敏感信息。
 
-修改 `version.json`，然后：
+## 许可证
 
-```bash
-npm run sync-version   # 同步 service-worker.js 缓存名和前端静态资源版本参数
-git add -A && git commit -m "release: vX.X.X"
-git push
+自 `v4.4.3` 起，本项目原创代码采用 [Mozilla Public License 2.0](LICENSE) 发布。此前已经按 MIT License 获得副本的使用者，其既有权利不受影响。
 
-# VPS 上执行
-git pull && ./deploy.sh
-```
-
-`version.json` 是发布版本的唯一来源。`npm run sync-version` 会同步 `service-worker.js` 的 `CACHE_NAME`、预缓存资源 URL，以及 `index.html` 中 `app.css`、`app.js`、`qr.min.js` 的 `?v=...` 参数，避免安装版 PWA 继续加载旧脚本。
-
-注意：`version.json` 是应用程序发布版本的唯一事实来源。`package.json.version` 目前不用于部署或 PWA 缓存版本控制。
-
----
-
-## License
-
-MIT
+项目包含源自 [`mercutiojohn/hht-web`](https://github.com/mercutiojohn/hht-web) 的 MIT 许可代码及其他第三方组件；其各自许可证继续适用，详见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
