@@ -11,7 +11,7 @@
 
 ## Prepare a release
 
-1. Start from an up-to-date `main` branch and create a focused release branch.
+1. Start from an up-to-date `main` branch and create a focused branch using `type/description` or `type/scope/description`, such as `feat/self-hosting` or `fix/deploy/rollback`. Use a Conventional Commit type and lowercase kebab-case segments; do not add tool or author prefixes such as `codex/`.
 2. Update the release notes in `version.json`.
 3. Run `npm version <version> --no-git-tag-version`. The npm `version` lifecycle synchronizes `version.json`, the service-worker cache, and versioned static asset URLs.
 4. Run the required checks:
