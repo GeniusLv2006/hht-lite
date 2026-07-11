@@ -25,7 +25,7 @@
    git diff --check
    ```
 
-5. Commit using Conventional Commits, push the branch, and open a pull request. Runtime, dependency, deployment, security, networking, executable-script, and release-boundary changes always require a pull request.
+5. Use Conventional Commits for both commit messages and pull-request titles, push the branch, and open a pull request. PR titles must use `type(scope): description` or `type: description`; do not add tool or author branding such as `[codex]`. Runtime, dependency, deployment, security, networking, executable-script, and release-boundary changes always require a pull request.
 6. Merge only after CI and review pass.
 
 ## Deploy and publish

@@ -12,4 +12,4 @@ Before submitting anything publicly:
 
 For substantial continued development, maintaining an independent fork is the recommended path.
 
-Repository changes use [Conventional Commits](https://www.conventionalcommits.org/). Release preparation and deployment rules are documented in [RELEASING.md](RELEASING.md).
+Commit messages and pull-request titles use [Conventional Commits](https://www.conventionalcommits.org/). PR titles must not include tool or author branding. Release preparation and deployment rules are documented in [RELEASING.md](RELEASING.md).
