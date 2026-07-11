@@ -9,6 +9,7 @@
   },
   "scripts": {
     "start": "node server.js",
+    "check-pr-title": "node scripts/check-pr-title.js",
     "sync-version": "node scripts/sync-version.js",
     "check-release": "node scripts/check-release.js",
     "version": "npm run sync-version",
