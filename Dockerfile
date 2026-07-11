@@ -1,17 +1,25 @@
-FROM node:24-alpine
+FROM node:24-alpine AS dependencies
 
 WORKDIR /app
 
-# Install build dependencies for better-sqlite3
 RUN apk add --no-cache python3 make g++
 
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 
-COPY . .
+FROM node:24-alpine
 
-# Create mount point directories (public/ and admin/ are bind-mounted at runtime)
-RUN mkdir -p /app/data /app/public /app/admin
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+COPY --from=dependencies /app/node_modules ./node_modules
+COPY package.json package-lock.json server.js version.json ./
+COPY src ./src
+COPY public ./public
+COPY admin ./admin
+
+RUN mkdir -p /app/data
 
 EXPOSE 3100
 

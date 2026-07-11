@@ -23,7 +23,7 @@
 ## 自行部署
 
 > [!CAUTION]
-> 自行部署者需要独立评估代码、安全性、上游 API 合规性和数据保护要求，并自行承担维护责任。现有部署脚本主要服务于原项目环境，不是通用的一键部署方案。
+> 自行部署者需要独立评估代码、安全性、上游 API 合规性和数据保护要求，并自行承担维护责任。管理后台依赖 Secure Cookie，生产部署必须通过 HTTPS 反向代理访问。
 
 ### 1. 克隆仓库
 
@@ -39,15 +39,28 @@ cp .env.example .env
 # 编辑 .env，填入必要的值
 ```
 
+至少设置 `INIT_ADMIN_PASSWORD` 和实际使用的 HTTPS `ALLOWED_ORIGINS`。默认端口只绑定 `127.0.0.1`，不会直接暴露到公网。
+
 ### 3. 构建并启动容器
 
 ```bash
-./deploy.sh
+docker compose up -d --build
+docker compose ps
 ```
 
-脚本默认监听 `172.17.0.1:3100`，并假定存在与原部署环境一致的 Docker 网络和反向代理。管理后台 Cookie 要求 HTTPS；用于其他环境前请审查并调整脚本、挂载路径、监听地址和反向代理配置。
+Compose 构建的镜像包含前端、管理后台和服务端代码，只有 `./data` 目录需要持久化。升级前请备份该目录；拉取新版本后重新执行上述命令即可重建。
 
 容器内置健康检查，公开探针 `GET /healthz` 会验证进程和 SQLite 是否可用；正常时返回 HTTP 200，数据库不可用时返回 HTTP 503。该端点不包含内存、凭据或其他敏感运行信息。
+
+### 4. 验证与停止
+
+```bash
+curl --fail http://127.0.0.1:3100/healthz
+docker compose logs --tail=50 hht-lite
+docker compose down
+```
+
+`docker compose down` 不会删除 `./data`。不要使用 `down -v`，也不要在未备份的情况下删除该目录。
 
 ## 环境变量
 
@@ -55,10 +68,13 @@ cp .env.example .env
 
 | 变量 | 说明 | 必填 |
 |------|------|------|
-| `ADMIN_OPENID` | 管理员微信小程序慧湖通 OpenID | 是 |
+| `ADMIN_OPENID` | 管理员微信小程序慧湖通 OpenID | 否 |
 | `INIT_ADMIN_PASSWORD` | 首次启动时创建管理员账户的密码 | 首次部署时需要 |
 | `INIT_ADMIN_USER` | 管理员用户名（默认 `admin`） | 否 |
-| `ALLOWED_ORIGINS` | 允许的前端域名，逗号分隔 | 否 |
+| `ALLOWED_ORIGINS` | 允许的 HTTPS 前端域名，逗号分隔 | 是 |
+| `HHT_BIND_HOST` | Compose 绑定地址（默认 `127.0.0.1`） | 否 |
+| `HHT_HOST_PORT` | Compose 主机端口（默认 `3100`） | 否 |
+| `HHT_IMAGE_TAG` | 本地镜像标签 | 否 |
 
 ## 支持与安全
 

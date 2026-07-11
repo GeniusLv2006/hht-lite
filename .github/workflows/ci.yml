@@ -38,3 +38,20 @@ jobs:
           load: true
           tags: hht-lite:ci
           push: false
+      - name: Smoke-test the container
+        run: |
+          docker run --detach --name hht-lite-ci hht-lite:ci
+          trap 'docker rm --force hht-lite-ci' EXIT
+          for attempt in {1..12}; do
+            if [ "$(docker inspect hht-lite-ci --format '{{if .State.Health}}{{.State.Health.Status}}{{end}}')" = healthy ]; then
+              docker exec hht-lite-ci wget --quiet --output-document=- http://127.0.0.1:3100/healthz
+              exit 0
+            fi
+            sleep 5
+          done
+          docker logs hht-lite-ci
+          exit 1
+      - name: Validate Compose configuration
+        run: |
+          cp .env.example .env
+          docker compose config --quiet

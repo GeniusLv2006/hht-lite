@@ -1,6 +1,9 @@
 data/
-public/
-admin/
 node_modules/
 .git/
+.github/
+.env
+.env.*
+test/
+scripts/
 *.md
