@@ -114,7 +114,7 @@ docker compose logs --tail=50 hht-lite
 健康检查成功时会返回类似内容：
 
 ```json
-{"status":"ok","version":"v5.1.1"}
+{"status":"ok","version":"v6.0.0"}
 ```
 
 版本号可能随仓库版本变化。`GET /healthz` 会验证进程和 SQLite 是否可用；数据库不可用时返回 HTTP 503。该端点不包含内存、凭据或其他敏感运行信息。
@@ -269,7 +269,7 @@ docker compose down
 ./deploy.sh --image vMAJOR.MINOR.PATCH
 ```
 
-镜像回滚只支持 `v5.1.0` 或更新版本。更早的镜像依赖宿主机挂载的静态资源，不是完整的回滚单元。完整发布规则参见 [RELEASING.md](RELEASING.md)。
+镜像回滚只支持 `v5.1.0` 或更新版本。更早的镜像依赖宿主机挂载的静态资源，不是完整的回滚单元。完整流程参见[维护指南](docs/maintenance.md)和[发布规则](docs/releasing.md)。
 
 ## 常见问题
 
@@ -324,9 +324,13 @@ curl --fail http://127.0.0.1:3100/healthz
 
 本项目不再主动修复 Bug、安全问题或上游 API 兼容性问题，也不保证审查或合并外部贡献。请先阅读 [SECURITY.md](SECURITY.md) 和 [CONTRIBUTING.md](CONTRIBUTING.md)。请勿在公开 Issue 中披露未修复漏洞、凭据、OpenID、访问日志或其他敏感信息。
 
+更多维护、发布与来源审计资料见[文档索引](docs/README.md)。
+
 ## 许可证
 
 自 `v4.4.3` 起，本项目原创代码采用 [Mozilla Public License 2.0](LICENSE) 发布。此前已经按 MIT License 获得副本的使用者，其既有权利不受影响。
+
+`v6.0.0` 建立了独立实现的代码与资产基线，审计范围和方法见[来源审计](docs/provenance.md)。历史版本和提交继续适用其发布时的许可证状态。
 
 第三方组件继续适用其各自许可证，详见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
 

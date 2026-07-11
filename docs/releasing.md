@@ -32,6 +32,7 @@ File size alone does not decide the route: a one-line runtime or security change
    npm run check-release
    npm audit --omit=dev
    npm run sync-version
+   pipx run --spec 'reuse[charset-normalizer]==6.2.0' reuse lint
    git diff --check
    ```
 
