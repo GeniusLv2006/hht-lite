@@ -30,9 +30,17 @@
 
 ## Deploy and publish
 
-1. Deploy the exact versioned image from the merged `main` commit.
+1. Deploy the exact versioned image from the merged `main` commit with `./deploy.sh`. The script smoke-tests a candidate before switching and automatically restores the previous container if production-data health or endpoint verification fails.
 2. Verify container health, restart count, `/healthz`, `/api/version`, the application page, and recent logs.
 3. If verification succeeds, create an annotated `vMAJOR.MINOR.PATCH` tag on the merge commit and publish a GitHub Release from the same tag.
 4. If deployment fails, roll back to the previously verified version. Do not create the release tag until the failed deployment has been corrected and verified.
+
+To redeploy a previously verified self-contained image that is still present locally:
+
+```bash
+./deploy.sh --image vMAJOR.MINOR.PATCH
+```
+
+Image-only rollback is supported for `v5.1.0` and newer. Earlier images depended on host-mounted static assets and are not complete rollback units.
 
 Release tags are immutable. Never move or recreate a published version tag; prepare a new patch version instead.

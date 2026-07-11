@@ -22,6 +22,7 @@ jobs:
       - run: npm test
       - run: npm run check-release
       - run: npm audit --omit=dev
+      - run: bash -n deploy.sh
       - name: Verify generated version files
         run: |
           npm run sync-version
@@ -35,6 +36,9 @@ jobs:
       - uses: docker/build-push-action@v6
         with:
           context: .
+          build-args: |
+            APP_VERSION=v${{ github.sha }}
+            VCS_REF=${{ github.sha }}
           load: true
           tags: hht-lite:ci
           push: false
