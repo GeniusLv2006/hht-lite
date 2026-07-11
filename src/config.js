@@ -1,3 +1,6 @@
+// Copyright (c) 2026 GeniusLv2006
+// SPDX-License-Identifier: MPL-2.0
+
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');

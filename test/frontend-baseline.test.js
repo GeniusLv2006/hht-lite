@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2026 GeniusLv2006
+// Copyright (c) 2026 GeniusLv2006
 // SPDX-License-Identifier: MPL-2.0
 
 const assert = require('node:assert/strict');

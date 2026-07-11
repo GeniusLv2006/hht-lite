@@ -22,6 +22,8 @@ jobs:
       - run: npm test
       - run: npm run check-release
       - run: npm audit --omit=dev
+      - name: Verify license metadata
+        run: pipx run --spec 'reuse[charset-normalizer]==6.2.0' reuse lint
       - run: bash -n deploy.sh
       - name: Verify generated version files
         run: |

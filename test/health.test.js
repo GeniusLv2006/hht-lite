@@ -1,3 +1,6 @@
+// Copyright (c) 2026 GeniusLv2006
+// SPDX-License-Identifier: MPL-2.0
+
 const assert = require('node:assert/strict');
 const { afterEach, test } = require('node:test');
 const express = require('express');

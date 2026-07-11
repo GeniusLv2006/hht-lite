@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# SPDX-FileCopyrightText: 2026 GeniusLv2006
+# Copyright (c) 2026 GeniusLv2006
 # SPDX-License-Identifier: MPL-2.0
 
 """Report review-threshold source matches against a temporary hht-web checkout."""
