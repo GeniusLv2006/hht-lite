@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// SPDX-FileCopyrightText: 2026 GeniusLv2006
+// SPDX-License-Identifier: MPL-2.0
 // 以 package.json 为唯一版本来源，同步发布元数据和 PWA 静态资源版本。
 
 const fs = require('fs');

@@ -5,7 +5,7 @@
 
 慧湖通（HuiHuTong）的非官方 PWA 前端与后端服务，提供二维码相关功能、黑名单检测、访问日志、公告推送、版本管理和管理后台。
 
-前端 PWA 基于 [mercutiojohn/hht-web](https://github.com/mercutiojohn/hht-web) 二次开发。本项目与西交利物浦大学、苏州独墅湖科教发展有限公司及慧湖通运营方不存在隶属、授权、合作或背书关系。
+本项目与西交利物浦大学、苏州独墅湖科教发展有限公司及慧湖通运营方不存在隶属、授权、合作或背书关系。
 
 本仓库适合作为参考项目、自行维护的私有部署或 Fork 基础。如果你需要持续的安全更新、兼容性维护或技术支持，请不要直接依赖本项目。
 
@@ -328,4 +328,4 @@ curl --fail http://127.0.0.1:3100/healthz
 
 自 `v4.4.3` 起，本项目原创代码采用 [Mozilla Public License 2.0](LICENSE) 发布。此前已经按 MIT License 获得副本的使用者，其既有权利不受影响。
 
-项目包含源自 [`mercutiojohn/hht-web`](https://github.com/mercutiojohn/hht-web) 的 MIT 许可代码及其他第三方组件；其各自许可证继续适用，详见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
+第三方组件继续适用其各自许可证，详见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。

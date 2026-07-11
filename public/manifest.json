@@ -1,6 +1,11 @@
 {
+  "id": "/index.html",
   "name": "慧湖通极速版",
+  "short_name": "慧湖通",
+  "description": "慧湖通二维码 PWA",
+  "lang": "zh-CN",
   "start_url": "./index.html",
+  "scope": "/",
   "display": "standalone",
   "theme_color": "#262624",
   "background_color": "#262624",

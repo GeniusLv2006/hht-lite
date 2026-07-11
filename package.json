@@ -1,6 +1,6 @@
 {
   "name": "hht-lite",
-  "version": "5.1.1",
+  "version": "6.0.0",
   "description": "hht-lite 服务端",
   "license": "MPL-2.0",
   "main": "server.js",
