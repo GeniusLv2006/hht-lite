@@ -1,20 +1,24 @@
 {
   "name": "hht-lite",
-  "version": "1.0.0",
+  "version": "5.0.0",
   "description": "hht-lite 服务端",
   "license": "MPL-2.0",
   "main": "server.js",
+  "engines": {
+    "node": ">=24 <25"
+  },
   "scripts": {
     "start": "node server.js",
-    "sync-version": "node scripts/sync-version.js"
+    "sync-version": "node scripts/sync-version.js",
+    "test": "node --test"
   },
   "dependencies": {
-    "bcryptjs": "^2.4.3",
-    "better-sqlite3": "^9.4.3",
-    "cors": "^2.8.5",
-    "express": "^4.18.2",
-    "jsonwebtoken": "^9.0.2",
-    "compression": "^1.7.4",
-    "express-rate-limit": "^7.1.5"
+    "bcryptjs": "^3.0.3",
+    "better-sqlite3": "^12.11.1",
+    "compression": "^1.8.1",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.5.2",
+    "jsonwebtoken": "^9.0.3"
   }
 }
