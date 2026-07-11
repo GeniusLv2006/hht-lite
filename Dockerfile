@@ -1,4 +1,4 @@
-FROM node:20-alpine
+FROM node:24-alpine
 
 WORKDIR /app
 
@@ -14,5 +14,8 @@ COPY . .
 RUN mkdir -p /app/data /app/public /app/admin
 
 EXPOSE 3100
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD wget --quiet --tries=1 --spider http://127.0.0.1:3100/healthz || exit 1
 
 CMD ["node", "--max-old-space-size=128", "server.js"]

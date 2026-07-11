@@ -18,6 +18,7 @@
 - **后端**：Node.js + Express
 - **数据库**：SQLite（[better-sqlite3](https://github.com/WiseLibs/better-sqlite3)）
 - **部署**：Docker
+- **运行时**：Node.js 24 LTS
 
 ## 自行部署
 
@@ -45,6 +46,8 @@ cp .env.example .env
 ```
 
 脚本默认监听 `172.17.0.1:3100`，并假定存在与原部署环境一致的 Docker 网络和反向代理。管理后台 Cookie 要求 HTTPS；用于其他环境前请审查并调整脚本、挂载路径、监听地址和反向代理配置。
+
+容器内置健康检查，公开探针 `GET /healthz` 会验证进程和 SQLite 是否可用；正常时返回 HTTP 200，数据库不可用时返回 HTTP 503。该端点不包含内存、凭据或其他敏感运行信息。
 
 ## 环境变量
 

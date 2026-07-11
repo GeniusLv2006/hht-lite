@@ -18,6 +18,7 @@ const {
 const { cleanExpiredBans, cleanOldLogs, createGeoService } = require('./src/utils');
 const createPublicRouter = require('./src/routes/public');
 const createAdminRouter = require('./src/routes/admin');
+const createHealthRouter = require('./src/routes/health');
 
 const app = express();
 const geoService = createGeoService(db);
@@ -27,6 +28,7 @@ app.set('trust proxy', 1);
 app.use(securityHeaders);
 app.use(corsMiddleware);
 app.use(jsonParser);
+app.use(createHealthRouter({ db }));
 
 cleanOldLogs(db);
 setInterval(() => cleanOldLogs(db), 60 * 60 * 1000);
