@@ -9,6 +9,16 @@
 - `PATCH`: backward-compatible bug, security, dependency, and documentation corrections.
 - Documentation-only changes normally do not create an application release.
 
+## Direct commit or pull request
+
+Use the smallest workflow that matches the risk and impact of the change.
+
+Commit directly to `main` when the change is clearly low risk, does not alter application or deployment behavior, and is easy to review and revert. Typical examples include prose and spelling corrections, comments, `.gitignore`, ignored local guidance, repository housekeeping, and adjustments to non-runtime collaboration policy. Use a Conventional Commit message, run checks proportionate to the change, and push `main` without creating a release.
+
+Use a pull request when the change can affect application behavior, security or privacy boundaries, data or database handling, API or network behavior, runtime or dependencies, configuration semantics, container or deployment behavior, release artifacts, executable scripts, or meaningful CI build/test/release gates. Multi-file refactors and changes whose risk is uncertain also require a pull request.
+
+File size alone does not decide the route: a one-line runtime or security change still requires a PR, while a small documentation or repository-hygiene change may go directly to `main`.
+
 ## Prepare a release
 
 1. Start from an up-to-date `main` branch and create a focused branch using `type/description` or `type/scope/description`, such as `feat/self-hosting` or `fix/deploy/rollback`. Use a Conventional Commit type and lowercase kebab-case segments; do not add tool or author prefixes such as `codex/`.
@@ -25,7 +35,7 @@
    git diff --check
    ```
 
-5. Use Conventional Commits for both commit messages and pull-request titles, push the branch, and open a pull request. PR titles must use `type(scope): description` or `type: description`; do not add tool or author branding such as `[codex]`. Runtime, dependency, deployment, security, networking, executable-script, and release-boundary changes always require a pull request.
+5. Use Conventional Commits for both commit messages and pull-request titles, push the branch, and open a pull request. PR titles must use `type(scope): description` or `type: description`; do not add tool or author branding such as `[codex]`.
 6. Merge only after CI and review pass.
 
 ## Deploy and publish
