@@ -4,7 +4,7 @@
 
 ## Version policy
 
-- `MAJOR`: incompatible API, configuration, runtime, storage, or deployment changes.
+- `MAJOR`: incompatible API, configuration, runtime, storage, or deployment changes, or a deliberate new baseline for the project's licensing or source provenance. A provenance-only major release must explicitly document compatibility.
 - `MINOR`: backward-compatible features and deployment improvements.
 - `PATCH`: backward-compatible bug, security, dependency, and documentation corrections.
 - Documentation-only changes normally do not create an application release.

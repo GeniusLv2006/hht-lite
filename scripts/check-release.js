@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// SPDX-FileCopyrightText: 2026 GeniusLv2006
+// SPDX-License-Identifier: MPL-2.0
 
 const fs = require('fs');
 const path = require('path');
@@ -29,6 +31,9 @@ if (!Array.isArray(release.changes) || release.changes.length === 0 || release.c
 
 const serviceWorker = fs.readFileSync(path.join(root, 'public', 'service-worker.js'), 'utf8');
 const indexHtml = fs.readFileSync(path.join(root, 'public', 'index.html'), 'utf8');
+const appJs = fs.readFileSync(path.join(root, 'public', 'app.js'), 'utf8');
+const readme = fs.readFileSync(path.join(root, 'README.md'), 'utf8');
+const manifest = JSON.parse(fs.readFileSync(path.join(root, 'public', 'manifest.json'), 'utf8'));
 
 if (!serviceWorker.includes(`const CACHE_NAME = 'offline-cache-${expectedVersion}';`)) {
   errors.push('service-worker.js cache name is out of sync');
@@ -41,6 +46,28 @@ for (const asset of ['app.css', 'app.js', 'qr.min.js']) {
   if (!indexHtml.includes(`./${asset}?v=${expectedVersion}`)) {
     errors.push(`index.html ${asset} version is out of sync`);
   }
+}
+
+const hdrPrimer = path.join(root, 'public', 'videos', 'hdr-primer.mp4');
+if (!fs.existsSync(hdrPrimer) || fs.statSync(hdrPrimer).size === 0) {
+  errors.push('the independently generated HDR primer is missing');
+}
+if (!serviceWorker.includes('/videos/hdr-primer.mp4') || !appJs.includes("'./videos/hdr-primer.mp4'")) {
+  errors.push('HDR primer references are incomplete');
+}
+
+for (const retiredAsset of ['white.png', 'white1.mp4', 'white1.webm', 'white2.mp4']) {
+  if (fs.existsSync(path.join(root, 'public', 'videos', retiredAsset))) {
+    errors.push(`retired upstream asset remains: ${retiredAsset}`);
+  }
+}
+
+if (/mercutiojohn\/hht-web/i.test(`${readme}\n${appJs}`)) {
+  errors.push('current public surfaces still describe an hht-web dependency');
+}
+
+if (manifest.id !== '/index.html' || manifest.scope !== '/' || manifest.start_url !== './index.html') {
+  errors.push('manifest navigation scope is inconsistent');
 }
 
 if (errors.length > 0) {

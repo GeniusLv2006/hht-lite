@@ -35,26 +35,30 @@
             }
         });
 
-        function isIos() {
-            return /iPhone/.test(navigator.userAgent) && !window.matchMedia("(display-mode: standalone)").matches;
-        }
+        const iosInstallPrompt = (() => {
+            const prompt = document.getElementById('iosPrompt');
+            const dismiss = document.getElementById('closePrompt');
+            const dismissedKey = 'iosPromptClosed';
 
-        function isInStandaloneMode() {
-            return ('standalone' in navigator) && navigator.standalone;
-        }
+            const isEligible = () => {
+                const iphone = navigator.userAgent.includes('iPhone');
+                const installed = navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+                return iphone && !installed && localStorage.getItem(dismissedKey) !== 'true';
+            };
 
-        function showIosPrompt() {
-            if (isIos() && !isInStandaloneMode() && !localStorage.getItem('iosPromptClosed')) {
-                document.getElementById('iosPrompt').style.display = 'block';
-            }
-        }
+            const openWhenUseful = () => {
+                if (isEligible()) prompt.style.display = 'block';
+            };
 
-        document.getElementById('closePrompt').addEventListener('click', function () {
-            document.getElementById('iosPrompt').style.display = 'none';
-            localStorage.setItem('iosPromptClosed', 'true');
-        });
+            dismiss.addEventListener('click', () => {
+                localStorage.setItem(dismissedKey, 'true');
+                prompt.style.display = 'none';
+            });
 
-        window.addEventListener('load', showIosPrompt);
+            return { openWhenUseful };
+        })();
+
+        window.addEventListener('load', iosInstallPrompt.openWhenUseful, { once: true });
 
         // XSS 防护：HTML 实体转义
         function escapeHtml(str) {
@@ -128,14 +132,17 @@
 
         let isInitialLoad = true;
 
-        const tipsElement = document.getElementById('tips');
-        const serverStatusElement = document.getElementById('server-status');
-        const qrcodeElement = document.getElementById('qrcode');
-        const setOpenIdBtn = document.getElementById('setOpenIdBtn');
-        const refreshQRCodeBtn = document.getElementById('refreshQRCodeBtn');
+        const [
+            tipsElement,
+            serverStatusElement,
+            qrcodeElement,
+            setOpenIdBtn,
+            refreshQRCodeBtn
+        ] = ['tips', 'server-status', 'qrcode', 'setOpenIdBtn', 'refreshQRCodeBtn']
+            .map(id => document.getElementById(id));
         const REFRESH_BTN_ORIGINAL_HTML = refreshQRCodeBtn.innerHTML;
         const HDR_ASSIST_KEY = 'hdr_brightness_assist';
-        const HDR_PRIMER_SRC = './videos/white1.mp4';
+        const HDR_PRIMER_SRC = './videos/hdr-primer.mp4';
         let hdrPrimerVideo = null;
         let qrWakeLock = null;
         let hasVisibleQRCode = false;
@@ -263,12 +270,21 @@
             refreshQRCodeBtn.textContent = `冻结中 ${remaining}s`;
             window.btnFreezeTimer = setTimeout(applyButtonFreeze, 1000);
         }
-        const messageBox = document.getElementById('message-box');
-        const inputDialog = document.getElementById('input-dialog');
-        const dialogMessage = document.getElementById('dialog-message');
-        const dialogInput = document.getElementById('dialog-input');
-        const dialogConfirm = document.getElementById('dialog-confirm');
-        const dialogCancel = document.getElementById('dialog-cancel');
+        const [
+            messageBox,
+            inputDialog,
+            dialogMessage,
+            dialogInput,
+            dialogConfirm,
+            dialogCancel
+        ] = [
+            'message-box',
+            'input-dialog',
+            'dialog-message',
+            'dialog-input',
+            'dialog-confirm',
+            'dialog-cancel'
+        ].map(id => document.getElementById(id));
         const splashScreen = document.getElementById('splash-screen');
         const qrcodeContainer = document.getElementById('qrcode-container');
 
@@ -431,37 +447,35 @@
             }
         }
 
-        function showInputDialog(msg, placeholder = '请输入', isPassword = false) {
+        let activeInputDialog = null;
+
+        function showInputDialog(message, placeholder = '请输入', isPassword = false) {
+            if (activeInputDialog) activeInputDialog(null);
+
+            dialogMessage.textContent = message;
+            dialogInput.replaceChildren();
+            dialogInput.value = '';
+            dialogInput.placeholder = placeholder;
+            dialogInput.type = isPassword ? 'password' : 'text';
+            _showOverlay(inputDialog);
+            dialogInput.focus();
+
             return new Promise((resolve) => {
-                dialogMessage.textContent = msg;
-                dialogInput.value = '';
-                dialogInput.placeholder = placeholder;
-                dialogInput.type = isPassword ? 'password' : 'text';
-                _showOverlay(inputDialog);
-                dialogInput.focus();
-
-                function handleConfirm() {
-                    const value = dialogInput.value;
-                    _hideOverlay(inputDialog);
+                let settled = false;
+                const finish = (value) => {
+                    if (settled) return;
+                    settled = true;
+                    dialogConfirm.onclick = null;
+                    dialogCancel.onclick = null;
                     dialogInput.type = 'text';
+                    activeInputDialog = null;
+                    _hideOverlay(inputDialog);
                     resolve(value);
-                    cleanup();
-                }
+                };
 
-                function handleCancel() {
-                    _hideOverlay(inputDialog);
-                    dialogInput.type = 'text';
-                    resolve(null);
-                    cleanup();
-                }
-
-                function cleanup() {
-                    dialogConfirm.removeEventListener('click', handleConfirm);
-                    dialogCancel.removeEventListener('click', handleCancel);
-                }
-
-                dialogConfirm.addEventListener('click', handleConfirm);
-                dialogCancel.addEventListener('click', handleCancel);
+                activeInputDialog = finish;
+                dialogConfirm.onclick = () => finish(dialogInput.value);
+                dialogCancel.onclick = () => finish(null);
             });
         }
 
@@ -561,65 +575,63 @@
         }
 
         async function handleSetOpenId() {
-            const newOpenId = await showInputDialog('修改 OpenID', '请输入 OpenID');
-            if (newOpenId === null) return;
+            const candidate = await showInputDialog('修改 OpenID', '请输入 OpenID');
+            if (candidate === null) return;
 
-            // 检查是否被拉黑（强制刷新）
-            const blacklistResult = await checkBlacklist(newOpenId, true);
-            if (blacklistResult.blocked) {
-                showMessage((blacklistResult.ban_message || '此 OpenID 已被禁用') + (blacklistResult.reason ? '\n' + blacklistResult.reason : ''), 5000);
+            const access = await checkBlacklist(candidate, true);
+            if (access.blocked) {
+                const explanation = access.reason ? `\n${access.reason}` : '';
+                showMessage(`${access.ban_message || '此 OpenID 已被禁用'}${explanation}`, 5000);
                 return;
             }
 
-            openId = newOpenId;
-            localStorage.setItem('openId', openId);
+            openId = candidate;
+            localStorage.setItem('openId', candidate);
             satoken = '';
-            sessionStorage.setItem('satoken', satoken);
+            sessionStorage.removeItem('satoken');
             clearSatokenCache();
             isInitialLoad = true;
             autoRefreshCount = 0;
-            refreshQRCode();
+            await refreshQRCode();
         }
 
         async function request(path) {
-            const controller = new AbortController();
-            const timeout = setTimeout(() => controller.abort(), 8000);
+            const timeoutController = new AbortController();
+            const timeoutId = setTimeout(() => timeoutController.abort(), 8000);
+            const options = {
+                headers: satoken ? { satoken } : {},
+                signal: timeoutController.signal
+            };
+
             try {
-                const response = await fetch(`https://api.215123.cn${path}`, {
-                    method: 'GET',
-                    headers: { 'satoken': satoken },
-                    signal: controller.signal
-                });
-                clearTimeout(timeout);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return await response.json();
-            } catch (e) {
-                clearTimeout(timeout);
-                throw e;
+                const response = await fetch(new URL(path, 'https://api.215123.cn'), options);
+                if (!response.ok) throw new Error(`Remote API returned ${response.status}`);
+                return response.json();
+            } finally {
+                clearTimeout(timeoutId);
             }
         }
 
         async function getSatoken() {
+            let payload;
             try {
-                const data = await request(`/web-app/auth/certificateLogin?openId=${openId}`);
-                satoken = data.data.token;
-                if (!satoken) throw new Error('satoken为空');
+                payload = await request(`/web-app/auth/certificateLogin?openId=${encodeURIComponent(openId)}`);
+                const credentials = payload?.data;
+                if (!credentials?.token) throw new Error('Authentication response did not include a token');
+
+                satoken = credentials.token;
                 sessionStorage.setItem('satoken', satoken);
                 saveSatokenCache(satoken);
-                // 提取并持久化姓名/userId
-                const respName   = data.data?.name   || '';
-                const respUserId = data.data?.userId || '';
-                if (respName) {
-                    localStorage.setItem(USER_NAME_KEY, respName);
-                    localStorage.setItem(USER_ID_KEY,   respUserId);
-                    userName = respName;
+
+                if (credentials.name) {
+                    localStorage.setItem(USER_NAME_KEY, credentials.name);
+                    localStorage.setItem(USER_ID_KEY, credentials.userId || '');
+                    userName = credentials.name;
                     updateHeaderGreeting();
                 }
                 return 0;
-            } catch (error) {
-                hideSplashScreen(); // OpenID 无效时先隐藏 splash，防止其遮挡输入框
+            } catch {
+                hideSplashScreen();
                 showMessage('OpenID 无效');
                 await handleSetOpenId();
                 return -1;
@@ -954,8 +966,7 @@
                         </ul>
                     </div>
                     <div style="margin-top:16px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-2);line-height:1.75;">
-                        <p style="margin-bottom:8px;">本项目基于 <a href="https://github.com/mercutiojohn/hht-web" target="_blank" style="color:var(--accent);text-decoration:none;">mercutiojohn/hht-web</a> 进行二次开发，在此表示感谢。</p>
-                        <p style="margin-bottom:8px;">由 <a href="https://github.com/GeniusLv2006" target="_blank" style="color:var(--accent);text-decoration:none;">GeniusLv2006</a> 使用 Codex 进行优化与功能扩展。</p>
+                        <p style="margin-bottom:8px;">由 <a href="https://github.com/GeniusLv2006" target="_blank" rel="noopener noreferrer" style="color:var(--accent);text-decoration:none;">GeniusLv2006</a> 开发与维护。</p>
                         <p style="margin-bottom:8px;"><a href="https://github.com/GeniusLv2006/hht-lite" target="_blank" rel="noopener noreferrer" style="color:var(--accent);text-decoration:none;">源代码与 MPL-2.0 许可证</a> · 项目已停止主动维护，公共实例不保证持续可用。</p>
                         <p style="color:var(--accent);">本程序仅供内部学习与测试使用，开发者不对因使用本程序产生的任何后果承担责任。</p>
                     </div>
@@ -1205,3 +1216,5 @@
         }
 
         initPage();
+// SPDX-FileCopyrightText: 2026 GeniusLv2006
+// SPDX-License-Identifier: MPL-2.0
