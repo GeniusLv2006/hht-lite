@@ -1,3 +1,6 @@
+// Copyright (c) 2026 GeniusLv2006
+// SPDX-License-Identifier: MPL-2.0
+
         function updateThemeIcon() {
             const isDark = document.documentElement.getAttribute('data-theme') === 'dark' ||
                 (!document.documentElement.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
@@ -1216,5 +1219,3 @@
         }
 
         initPage();
-// SPDX-FileCopyrightText: 2026 GeniusLv2006
-// SPDX-License-Identifier: MPL-2.0

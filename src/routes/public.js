@@ -1,3 +1,6 @@
+// Copyright (c) 2026 GeniusLv2006
+// SPDX-License-Identifier: MPL-2.0
+
 const express = require('express');
 const { PUBLIC_LOG_ACTIONS } = require('../config');
 const { activeBlacklistCondition, getClientIP } = require('../utils');

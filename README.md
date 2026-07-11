@@ -329,3 +329,5 @@ curl --fail http://127.0.0.1:3100/healthz
 自 `v4.4.3` 起，本项目原创代码采用 [Mozilla Public License 2.0](LICENSE) 发布。此前已经按 MIT License 获得副本的使用者，其既有权利不受影响。
 
 第三方组件继续适用其各自许可证，详见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
+
+源码文件使用 SPDX 标识，不能直接添加注释的文件由 `REUSE.toml` 或相邻 `.license` 文件声明。仓库符合 [REUSE Specification 3.3](https://reuse.software/spec/)；可使用 `pipx run --spec 'reuse[charset-normalizer]==6.2.0' reuse lint` 验证。

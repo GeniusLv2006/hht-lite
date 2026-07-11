@@ -1,4 +1,7 @@
 #!/bin/bash
+# Copyright (c) 2026 GeniusLv2006
+# SPDX-License-Identifier: MPL-2.0
+
 set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"

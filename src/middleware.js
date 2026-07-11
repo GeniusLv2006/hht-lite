@@ -1,3 +1,6 @@
+// Copyright (c) 2026 GeniusLv2006
+// SPDX-License-Identifier: MPL-2.0
+
 const cors = require('cors');
 const express = require('express');
 const jwt = require('jsonwebtoken');

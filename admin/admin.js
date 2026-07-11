@@ -1,3 +1,6 @@
+// Copyright (c) 2026 GeniusLv2006
+// SPDX-License-Identifier: MPL-2.0
+
     const API_BASE = window.location.origin;
 
     // ── 会话管理：自动退出 ──────────────────────────────────────

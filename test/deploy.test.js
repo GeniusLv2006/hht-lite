@@ -1,3 +1,6 @@
+// Copyright (c) 2026 GeniusLv2006
+// SPDX-License-Identifier: MPL-2.0
+
 const assert = require('node:assert/strict');
 const { execFileSync, spawnSync } = require('node:child_process');
 const path = require('node:path');

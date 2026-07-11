@@ -1,3 +1,6 @@
+// Copyright (c) 2026 GeniusLv2006
+// SPDX-License-Identifier: MPL-2.0
+
 const { SHANGHAI_OFFSET, LOG_RETENTION_DAYS } = require('./config');
 
 function clampInteger(value, min, max, fallback) {

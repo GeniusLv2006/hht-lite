@@ -1,3 +1,6 @@
+# Copyright (c) 2026 GeniusLv2006
+# SPDX-License-Identifier: MPL-2.0
+
 FROM node:24-alpine AS dependencies
 
 WORKDIR /app
