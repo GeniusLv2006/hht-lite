@@ -1,12 +1,28 @@
 #!/usr/bin/env node
-// 将 version.json 的版本号同步到 service-worker.js 的 CACHE_NAME 和静态资源版本参数
-// 在每次修改 version.json 后运行：npm run sync-version
+// 以 package.json 为唯一版本来源，同步发布元数据和 PWA 静态资源版本。
 
 const fs = require('fs');
 const path = require('path');
 
 const root = path.join(__dirname, '..');
-const { version } = require(path.join(root, 'version.json'));
+const packageJson = require(path.join(root, 'package.json'));
+const versionPath = path.join(root, 'version.json');
+const release = require(versionPath);
+const version = `v${packageJson.version}`;
+const date = new Date().toISOString().slice(0, 10);
+
+const updatedRelease = {
+  ...release,
+  version,
+  date: release.version === version ? release.date : date
+};
+
+if (JSON.stringify(updatedRelease) !== JSON.stringify(release)) {
+  fs.writeFileSync(versionPath, `${JSON.stringify(updatedRelease, null, 2)}\n`, 'utf8');
+  console.log(`✅ version.json 已同步为 ${version}`);
+} else {
+  console.log(`version.json 已是最新（${version}），无需更新`);
+}
 
 const swPath = path.join(root, 'public', 'service-worker.js');
 const swContent = fs.readFileSync(swPath, 'utf8');

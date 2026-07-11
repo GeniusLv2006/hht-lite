@@ -10,6 +10,8 @@
   "scripts": {
     "start": "node server.js",
     "sync-version": "node scripts/sync-version.js",
+    "check-release": "node scripts/check-release.js",
+    "version": "npm run sync-version",
     "test": "node --test"
   },
   "dependencies": {

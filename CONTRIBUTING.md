@@ -11,3 +11,5 @@ Before submitting anything publicly:
 - Confirm that contributed code and assets may be distributed under MPL-2.0 and document any third-party licenses.
 
 For substantial continued development, maintaining an independent fork is the recommended path.
+
+Repository changes use [Conventional Commits](https://www.conventionalcommits.org/). Release preparation and deployment rules are documented in [RELEASING.md](RELEASING.md).
