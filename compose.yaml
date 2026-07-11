@@ -1,0 +1,18 @@
+services:
+  hht-lite:
+    image: hht-lite:${HHT_IMAGE_TAG:-local}
+    build:
+      context: .
+    restart: unless-stopped
+    init: true
+    ports:
+      - "${HHT_BIND_HOST:-127.0.0.1}:${HHT_HOST_PORT:-3100}:3100"
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
